@@ -3,16 +3,65 @@ package Buff
 import TimerUtils
 import LinkedList
 import InstantDummyCaster
+import OnUnitEnterLeave
+import HashMap
+import ErrorHandling
 
 //configuration: setGetBuffListFunction
 
-GetBuffListFunction getBuffListFunction
+GetBuffListFunction getBuffListFunction = null
 
 public function setGetBuffListFunction(GetBuffListFunction getBuffList)
-    getBuffListFunction = getBuffList
+    if getBuffListFunction != null
+        error("The getBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setGetBuffListFunction.")
+    else
+        getBuffListFunction = getBuffList
 
 public interface GetBuffListFunction
     function getBuffList(unit u) returns BuffList
+
+/*
+    configuration: useNativeBuffListAllocation
+    autoamtically allocates buff lists when units are created and removes the list when the unit is removed
+    If you use this method, setGetBuffListFunction must not be used by the user.
+*/
+
+constant unitToBuffList = new HashMap<unit, BuffList>()
+
+public function useNativeBuffListAllocation()
+    onEnter( () -> (begin
+        if not getEnterLeaveUnit().hasAbility('Aloc')
+            unitToBuffList.put(getEnterLeaveUnit(), new BuffList())
+    end))
+    onLeave( () -> (begin
+        if not getEnterLeaveUnit().hasAbility('Aloc')
+            let bList = getBuffListFunction.getBuffList(getEnterLeaveUnit())
+            for Buff b in bList.getLinkedList()
+                b.dispel()
+
+            destroy bList
+    end))
+
+    setGetBuffListFunction( (unit u) -> (begin
+        let bList = unitToBuffList.get(u)
+        return bList
+    end))
+
+/*
+    configuration: dispelBuffsOnDeath
+    autoamtically dispels buffs when a unit dies
+*/
+
+public function dispelBuffsOnDeath()
+    CreateTrigger()
+        ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DEATH)
+        ..addAction(() -> (begin
+            let bList = getBuffListFunction.getBuffList(GetTriggerUnit())
+            if bList != null
+                for Buff b in bList.getLinkedList()
+                    b.dispel()
+        end))
+        
 
 /*
 Idea: each unit can have every buff only once
