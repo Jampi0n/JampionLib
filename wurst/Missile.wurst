@@ -22,6 +22,9 @@ function unit.getHitBox() returns real
 public interface MissileHitFunction
     function missileHit(Missile thisMissile, unit target)
 
+public interface MissileCheckReflectFunction
+    function checkReflect(Missile thisMissile, unit target) returns boolean
+
 public interface MissileCheckFunction
     function missileCheck(Missile thisMissile, unit target) returns boolean
 
@@ -35,6 +38,9 @@ public class Missile
 
     //private trigger onHitCondition = null
     private MissileCheckFunction onHitFilter = null
+
+    private MissileCheckReflectFunction checkReflectFunction = null
+
     //private trigger onHit = null
     private MissileHitFunction onHitFunction = null
 
@@ -120,11 +126,12 @@ public class Missile
                     currentMissile = this
                     currentTarget = target
                     if this.onHitFilter==null or this.onHitFilter.missileCheck(this, target)
-                        if this.onHitFunction != null
-                            this.onHitFunction.missileHit(this, target)
+                        if this.checkReflectFunction==null or not this.checkReflectFunction.checkReflect(this, target)
+                            if this.onHitFunction != null
+                                this.onHitFunction.missileHit(this, target)
 
-                        if hitOnce
-                            this.hitUnits.addUnit(target)
+                            if hitOnce
+                                this.hitUnits.addUnit(target)
 
 
             nearby.destr()
@@ -135,6 +142,9 @@ public class Missile
     function destr()
         this.destroyed = true
         doAfter(0, () -> destroy this)
+
+    function setReflectFunction(MissileCheckReflectFunction reflectFunction)
+        this.checkReflectFunction = reflectFunction
 
     function setHitCondition(MissileCheckFunction hitCondition)
         this.onHitFilter = hitCondition
@@ -160,6 +170,8 @@ public class Missile
         this.maxRange = range
     function setMaxDuration(real duration)
         this.maxDuration = duration
+    function getDirection() returns angle
+        return this.direction
     
 
     static function getTriggerMissile() returns Missile

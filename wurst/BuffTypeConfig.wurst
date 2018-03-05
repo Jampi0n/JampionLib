@@ -6,6 +6,7 @@ import ObjectIdGenerator
 import AbilityObjEditing
 import BuffObjEditing
 import ObjectIds
+import InstantDummyCaster
 
 constant ABILITY_STUNNED = compiletime(ABIL_ID_GEN.next())
 constant ABILITY_SILENCED = compiletime(ABIL_ID_GEN.next())
@@ -23,6 +24,7 @@ constant ABILITY_UNTARGETABLE = compiletime(ABIL_ID_GEN.next())
 constant BUFF_SILENCED = compiletime(BUFF_ID_GEN.next())
 constant BUFF_CYCLONED = compiletime(BUFF_ID_GEN.next())
 constant BUFF_ENSNARED = compiletime(BUFF_ID_GEN.next())
+constant BUFF_ENSNARED_AIR = compiletime(BUFF_ID_GEN.next())
 constant BUFF_ENTANGLED = compiletime(BUFF_ID_GEN.next())
 constant BUFF_MISS = compiletime(BUFF_ID_GEN.next())
 constant BUFF_DISARMED = compiletime(BUFF_ID_GEN.next())
@@ -31,7 +33,7 @@ constant BUFF_UNTARGETABLE = compiletime(BUFF_ID_GEN.next())
 public constant STUNNED = new BuffType(ABILITY_STUNNED, "creepthunderbolt", 'BPSE', false, true)
 public constant SILENCED = new BuffType(ABILITY_SILENCED, "soulburn", BUFF_SILENCED, false, true)
 public constant CYCLONED = new BuffType(ABILITY_CYCLONED, "cyclone", BUFF_CYCLONED, false, true)
-public constant ENSNARED = new BuffType(ABILITY_ENSNARED, "ensnare", BUFF_ENSNARED, false, true)
+public constant ENSNARED = new BuffType(false, true)
 public constant ENTANGLED = new BuffType(ABILITY_ENTANGLED, "entanglingroots", BUFF_ENTANGLED, false, true)
 public constant MISS = new BuffType(ABILITY_MISS, "drunkenhaze", BUFF_MISS, false, true)
 public constant INVIS = new BuffType(ABILITY_INVIS, "invisibility", 'Binv', true, true)
@@ -59,6 +61,7 @@ public function AbilityDefinition.setDummySkill()
 @compiletime
 function createObjectData()
     new AbilityDefinitionThunderBoltCreep(ABILITY_STUNNED)
+        ..setDamage(1, 0)
         ..setDummySkill()
     new AbilityDefinitionFirelordSoulBurn(ABILITY_SILENCED)
         ..setDummySkill()
@@ -71,7 +74,7 @@ function createObjectData()
         ..setBuffs(1, "Bcyc,"+int2fourchar(BUFF_CYCLONED))
     new AbilityDefinitionEnsnare(ABILITY_ENSNARED)
         ..setDummySkill()
-        ..setBuffs(1, "Bena,"+int2fourchar(BUFF_ENSNARED))
+        ..setBuffs(1, int2fourchar(BUFF_ENSNARED)+","+int2fourchar(BUFF_ENSNARED_AIR))
     new AbilityDefinitionEntanglingRootscreep(ABILITY_ENTANGLED)
         ..setDummySkill()
         ..setDamageperSecond(1, 0)
@@ -99,6 +102,7 @@ function createObjectData()
         ..setName(1, "Disarmed")
         ..setTooltipNormalExtended(1, "This unit is disarmed; it cannot attack.")
     new BuffDefinition(BUFF_ENSNARED, 'Beng')
+    new BuffDefinition(BUFF_ENSNARED_AIR, 'Bena')
     new BuffDefinition(BUFF_ENTANGLED, 'BEer')
     new BuffDefinition(BUFF_MISS, 'Bcrs')
         ..setArtTarget(1, "")
@@ -132,4 +136,17 @@ init
         UnitRemoveType(thisBuff.getTarget(), UNIT_TYPE_ANCIENT)
     end) )
 
+    ENSNARED
+        ..addFirstFunction(() ->(begin
+        let currentBuff = Buff.getTriggerBuff()
+        let caster = currentBuff.getCaster()
+        let target = currentBuff.getTarget()
+        InstantDummyCaster.castTarget(caster.getOwner(), ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
+    end))
+        ..addEndFunction(() ->(begin
+        let currentBuff = Buff.getTriggerBuff()
+        let target = currentBuff.getTarget()
+        target.removeAbility(BUFF_ENSNARED)
+        target.removeAbility(BUFF_ENSNARED_AIR)
+    end))    
 
