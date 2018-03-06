@@ -3,6 +3,7 @@ package BonusMod
 import AbilityObjEditing
 import ObjectIdGenerator
 import public Stats
+import Preloader
 
 /*
 This system is based on Bonus Mod by
@@ -113,6 +114,18 @@ public function unit.addBonus(Stat whichStat, int bonus)
 init
     for i = 0 to MAX_LEVEL
         powersOfTwo[i] = (2).pow(i)
+
+    for i = 0 to MAX_LEVEL
+        preloadAbility(statToBonusAbiltiy(Stat.AD)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.AS)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.AR)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.HP)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.MP)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.STR)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.INT)+i)
+        preloadAbility(statToBonusAbiltiy(Stat.AGI)+i)
+
+        
 
 
 
