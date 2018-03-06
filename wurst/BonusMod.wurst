@@ -83,9 +83,9 @@ public function unit.setBonus(Stat whichStat, int bonus)
     var remainingBonus = bonus
     if( bonus < 0)
         remainingBonus = MAX_BONUS + bonus + 1
-        this.addAbility(MAX_LEVEL)
+        this.addAbility(abilityId + MAX_LEVEL)
     else
-        this.removeAbility(MAX_LEVEL)
+        this.removeAbility(abilityId + MAX_LEVEL)
 
     for i = MAX_LEVEL-1 downto 0
         let iBonus = powersOfTwo[i]
