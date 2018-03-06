@@ -298,9 +298,9 @@ public class BuffList
         Buff retBuff = null
         if buffList == null
             return null
-        for Buff currentBuff1337 in buffList.getLinkedList()
-            if(currentBuff1337.getBuffType() == buffType)
-                retBuff = currentBuff1337
+        for Buff currentBuff in buffList.getLinkedList()
+            if(currentBuff.getBuffType() == buffType)
+                retBuff = currentBuff
                 return retBuff
         return retBuff
 
