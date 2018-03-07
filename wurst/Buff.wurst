@@ -115,6 +115,9 @@ However if a unit is removed the bufflist is removed first and then the bufflist
 
 */
 
+public interface BuffEventClosure
+    function run(Buff whichBuff)
+
 
 
 public class BuffType
@@ -131,13 +134,21 @@ public class BuffType
     onEnd -> buff gone in any way
 
     */
-    protected trigger onFirst
+    /*protected trigger onFirst
     protected trigger onStack
     protected trigger onApply
     protected trigger onExpire
     protected trigger onDispel
     protected trigger onEnd
-    protected trigger onPeriodicTrigger
+    protected trigger onPeriodic*/
+
+    protected LinkedList<BuffEventClosure> onFirst = null
+    protected LinkedList<BuffEventClosure> onStack = null
+    protected LinkedList<BuffEventClosure> onApply = null
+    protected LinkedList<BuffEventClosure> onExpire = null
+    protected LinkedList<BuffEventClosure> onDispel = null
+    protected LinkedList<BuffEventClosure> onEnd = null
+    protected LinkedList<BuffEventClosure> onPeriodic = null
 
     private real periodicTime = 1
 
@@ -159,10 +170,8 @@ public class BuffType
         this.dummyAbilityId = abilityId
         this.buffId = buffId
         this.dummyOrderId = OrderId(orderString)
-        this.onFirst = CreateTrigger()
-            ..addAction(function castDummySpell)
-        this.onEnd = CreateTrigger()
-            ..addAction(function removeDummyBuff)
+        this.addFirstFunction( (Buff whichBuff) -> castDummySpell(whichBuff))
+        this.addEndFunction( (Buff whichBuff) -> removeDummyBuff(whichBuff))
 
 
 
@@ -175,10 +184,8 @@ public class BuffType
 
         this.buffId = buffId
         this.abilities = abilities
-        this.onFirst = CreateTrigger()
-            ..addAction(function addAuraAbility)
-        this.onEnd = CreateTrigger()
-            ..addAction(function removeAuraAbility)
+        this.addFirstFunction( (Buff whichBuff) -> addAuraAbility(whichBuff))
+        this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
 
     /* empty constructor, to be able to use constants */
     construct(boolean positive, boolean magical)
@@ -190,43 +197,34 @@ public class BuffType
         //onEnd -> remove aura and buff
         this.buffId = buffId
         this.abilities = abilities
-        this.onFirst = CreateTrigger()
-        this.addFirstFunction(function addAuraAbility)
-        this.addEndFunction(function removeAuraAbility)
+        this.addFirstFunction( (Buff whichBuff) -> addAuraAbility(whichBuff))
+        this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
 
-    static function printStatus()
-        let currentBuff = Buff.getTriggerBuff()
-        let target = currentBuff.getTarget()
-        print(target.getName()+" has buff "+ currentBuff.getRemaining().toString())
 
-    static function castDummySpell()
-        let currentBuff = Buff.getTriggerBuff()
-        let buffType = currentBuff.getBuffType()
-        let caster = currentBuff.getCaster()
-        let target = currentBuff.getTarget()
+    static function castDummySpell(Buff whichBuff)
+        let buffType = whichBuff.getBuffType()
+        let caster = whichBuff.getCaster()
+        let target = whichBuff.getTarget()
         InstantDummyCaster.castTarget(caster.getOwner(), buffType.dummyAbilityId, 1, buffType.dummyOrderId, target, target.getPos())
 
 
-    static function removeDummyBuff()
-        let currentBuff = Buff.getTriggerBuff()
-        let buffType = currentBuff.getBuffType()
-        let target = currentBuff.getTarget()
+    static function removeDummyBuff(Buff whichBuff)
+        let buffType = whichBuff.getBuffType()
+        let target = whichBuff.getTarget()
         target.removeAbility(buffType.buffId)
 
 
-    static function addAuraAbility()
-        let currentBuff = Buff.getTriggerBuff()
-        let buffType = currentBuff.getBuffType()
-        let target = currentBuff.getTarget()
+    static function addAuraAbility(Buff whichBuff)
+        let buffType = whichBuff.getBuffType()
+        let target = whichBuff.getTarget()
         buffType.abilities.forEach( (int abilityId ) -> (begin
             target.addAbility(abilityId)
-            target.setAbilityLevel(abilityId, currentBuff.getLevel())
+            target.setAbilityLevel(abilityId, whichBuff.getLevel())
         end) )
 
-    static function removeAuraAbility()
-        let currentBuff = Buff.getTriggerBuff()
-        let buffType = currentBuff.getBuffType()
-        let target = currentBuff.getTarget()
+    static function removeAuraAbility(Buff whichBuff)
+        let buffType = whichBuff.getBuffType()
+        let target = whichBuff.getTarget()
         buffType.abilities.forEach( (int abilityId ) -> target.removeAbility(abilityId))
         target.removeAbility(buffType.buffId)
 
@@ -242,40 +240,40 @@ public class BuffType
     function isPositive() returns boolean
         return this.positive
 
-    function addFirstFunction(code cb)
+    function addFirstFunction(BuffEventClosure cb)
         if(this.onFirst==null)
-            this.onFirst = CreateTrigger()
-        this.onFirst.addAction(cb)
+            this.onFirst = new LinkedList<BuffEventClosure>()
+        this.onFirst.add(cb)
 
-    function addStackFunction(code cb)
+    function addStackFunction(BuffEventClosure cb)
         if(this.onStack==null)
-            this.onStack = CreateTrigger()
-        this.onStack.addAction(cb)
+            this.onStack = new LinkedList<BuffEventClosure>()
+        this.onStack.add(cb)
 
-    function addApplyFunction(code cb)
+    function addApplyFunction(BuffEventClosure cb)
         if(this.onApply==null)
-            this.onApply = CreateTrigger()
-        this.onApply.addAction(cb)
+            this.onApply = new LinkedList<BuffEventClosure>()
+        this.onApply.add(cb)
 
-    function addExpireFunction(code cb)
+    function addExpireFunction(BuffEventClosure cb)
         if(this.onExpire==null)
-            this.onExpire = CreateTrigger()
-        this.onExpire.addAction(cb)
+            this.onExpire = new LinkedList<BuffEventClosure>()
+        this.onExpire.add(cb)
 
-    function addDispelFunction(code cb)
+    function addDispelFunction(BuffEventClosure cb)
         if(this.onDispel==null)
-            this.onDispel = CreateTrigger()
-        this.onDispel.addAction(cb)
+            this.onDispel = new LinkedList<BuffEventClosure>()
+        this.onDispel.add(cb)
 
-    function addEndFunction(code cb)
+    function addEndFunction(BuffEventClosure cb)
         if(this.onEnd==null)
-            this.onEnd = CreateTrigger()
-        this.onEnd.addAction(cb)
+            this.onEnd = new LinkedList<BuffEventClosure>()
+        this.onEnd.add(cb)
 
-    function addPeriodicFunction(code cb)
-        if(this.onPeriodicTrigger==null)
-            this.onPeriodicTrigger = CreateTrigger()
-        this.onPeriodicTrigger.addAction(cb)
+    function addPeriodicFunction(BuffEventClosure cb)
+        if(this.onPeriodic==null)
+            this.onPeriodic = new LinkedList<BuffEventClosure>()
+        this.onPeriodic.add(cb)
 
 /** Keeps track of the buffs a certain unit has.
 */
@@ -332,14 +330,15 @@ public class Buff
     private int level
     private BuffType buffType
     private timer expireTimer
-    private trigger onFirst
-    private trigger onStack
-    private trigger onApply
-    private trigger onExpire
-    private trigger onDispel
-    private trigger onEnd
-    private trigger onPeriodicTrigger
+    private LinkedList<BuffEventClosure> onFirst
+    private LinkedList<BuffEventClosure> onStack
+    private LinkedList<BuffEventClosure> onApply
+    private LinkedList<BuffEventClosure> onExpire
+    private LinkedList<BuffEventClosure> onDispel
+    private LinkedList<BuffEventClosure> onEnd
+    private LinkedList<BuffEventClosure> onPeriodic
     private timer periodicTimer = null
+    protected boolean destroyed = false
 
     private static Buff currentBuff 
 
@@ -361,8 +360,8 @@ public class Buff
             this.onExpire = buffType.onExpire
             this.onDispel = buffType.onDispel
             this.onEnd = buffType.onEnd
-            this.onPeriodicTrigger = buffType.onPeriodicTrigger
-            if(this.onPeriodicTrigger!=null)
+            this.onPeriodic = buffType.onPeriodic
+            if(this.onPeriodic!=null)
                 this.periodicTimer = getTimer()
                     ..setData(this castTo int)
                     ..startPeriodic(buffType.getPeriodicTime(), function onPeriodicStatic)
@@ -370,30 +369,41 @@ public class Buff
                 this.periodicTimer = null
 
             currentBuff = this
-            let oldBuff = BuffList.getBuffOfType(this.target, this.buffType)
+
 
             if(this.onApply!=null)
-                this.onApply.execute()
+                for BuffEventClosure cb in this.onApply
+                    cb.run(this)
+
+            let oldBuff = BuffList.getBuffOfType(this.target, this.buffType)
 
             if(oldBuff!=null)
                 //print("stack")
+
+                if oldBuff.destroyed == true
+                    print("old buff already destroyed")
+
                 if(this.onStack!=null)
-                    this.onStack.execute()
+                    for BuffEventClosure cb in this.onStack
+                        cb.run(this)
                 oldBuff.update(this.caster, duration)
                 destroy this
             else
                 //print("first")
                 getBuffListFunction.getBuffList(target).add(this)
                 if(this.onFirst!=null)
-                    this.onFirst.execute()
+                    for BuffEventClosure cb in this.onFirst
+                        cb.run(this)
 
             //print(this.expireTimer.getRemaining())
         
 
     private function onPeriodic()
-        currentBuff = this
-        if(this.onPeriodicTrigger!=null)
-            this.onPeriodicTrigger.execute()
+        if not destroyed
+            currentBuff = this
+            if(this.onPeriodic!=null)
+                for BuffEventClosure cb in this.onPeriodic
+                    cb.run(this)
 
     private static function onPeriodicStatic()
         let t = GetExpiredTimer()
@@ -403,9 +413,11 @@ public class Buff
     private function expire()
         currentBuff = this
         if(this.onExpire!=null)
-            this.onExpire.execute()
+            for BuffEventClosure cb in this.onExpire
+                cb.run(this)
         if(this.onEnd!=null)
-            this.onEnd.execute()
+            for BuffEventClosure cb in this.onEnd
+                cb.run(this)
         destroy this
 
     function dispel()
@@ -414,9 +426,11 @@ public class Buff
 
         currentBuff = this
         if(this.onDispel!=null)
-            this.onDispel.execute()
+            for BuffEventClosure cb in this.onDispel
+                cb.run(this)
         if(this.onEnd!=null)
-            this.onEnd.execute()
+            for BuffEventClosure cb in this.onEnd
+                cb.run(this)
         destroy this
 
     private static function expireStatic()
@@ -448,10 +462,12 @@ public class Buff
     function getLevel() returns integer
         return this.level
 
-    static function getTriggerBuff() returns Buff
-        return currentBuff
+    //static function getTriggerBuff() returns Buff
+        //return currentBuff
 
     ondestroy
+        
+        destroyed = true
 
         BuffList buffList = getBuffListFunction.getBuffList(target)
 
@@ -461,4 +477,6 @@ public class Buff
         this.expireTimer.release()
         if this.periodicTimer != null
             this.periodicTimer.release()
+
+        
         //do not modify triggers. They belong to the BuffType
