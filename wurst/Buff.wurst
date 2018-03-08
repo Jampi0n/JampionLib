@@ -6,6 +6,7 @@ import InstantDummyCaster
 import OnUnitEnterLeave
 import HashMap
 import ErrorHandling
+import ClosureTimers
 
 //configuration: setGetBuffListFunction
 
@@ -60,11 +61,15 @@ public function dispelBuffsOnDeath()
     CreateTrigger()
         ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DEATH)
         ..addAction(() -> (begin
-            let bList = getBuffListFunction.getBuffList(GetTriggerUnit())
+            //delay, so in case the unit dies inside a BuffEventClosure, the buff does not get destroyed.
+            doAfter(0, () ->(begin
+            
+                let bList = getBuffListFunction.getBuffList(GetTriggerUnit())
 
-            if bList != null
-                for Buff b in bList.getLinkedList()
-                    b.dispel()
+                if bList != null
+                    for Buff b in bList.getLinkedList()
+                        b.dispel()
+            end))
         end))
         
 

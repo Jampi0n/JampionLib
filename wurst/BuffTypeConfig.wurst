@@ -126,26 +126,22 @@ init
     abilityList = new LinkedList<int>
     ..add(ABILITY_UNTARGETABLE)
     UNTARGETABLE.setup(abilityList, BUFF_UNTARGETABLE)
-    UNTARGETABLE.addFirstFunction(()-> (begin
-        let thisBuff = Buff.getTriggerBuff()
+    UNTARGETABLE.addFirstFunction((Buff thisBuff)-> (begin
         UnitAddType(thisBuff.getTarget(), UNIT_TYPE_ANCIENT)
     end) )
 
-    UNTARGETABLE.addEndFunction(()-> (begin
-        let thisBuff = Buff.getTriggerBuff()
+    UNTARGETABLE.addEndFunction((Buff thisBuff)-> (begin
         UnitRemoveType(thisBuff.getTarget(), UNIT_TYPE_ANCIENT)
     end) )
 
     ENSNARED
-        ..addFirstFunction(() ->(begin
-        let currentBuff = Buff.getTriggerBuff()
-        let caster = currentBuff.getCaster()
-        let target = currentBuff.getTarget()
+        ..addFirstFunction((Buff thisBuff) ->(begin
+        let caster = thisBuff.getCaster()
+        let target = thisBuff.getTarget()
         InstantDummyCaster.castTarget(caster.getOwner(), ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
     end))
-        ..addEndFunction(() ->(begin
-        let currentBuff = Buff.getTriggerBuff()
-        let target = currentBuff.getTarget()
+        ..addEndFunction((Buff thisBuff) ->(begin
+        let target = thisBuff.getTarget()
         target.removeAbility(BUFF_ENSNARED)
         target.removeAbility(BUFF_ENSNARED_AIR)
     end))    
