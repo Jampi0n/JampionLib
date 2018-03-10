@@ -8,6 +8,11 @@ import HashMap
 import ErrorHandling
 import ClosureTimers
 
+int buffCount = 0
+int buffListCount = 0
+int buffTypeCount = 0
+
+
 //configuration: setGetBuffListFunction
 
 
@@ -22,6 +27,19 @@ public function setGetBuffListFunction(GetBuffListFunction getBuffList)
     else
         getBuffListFunction = getBuffList
 
+//configuration: setCreateBuffListFunction
+
+public interface CreaetBuffListFunction
+    function createBuffList(unit u)
+
+CreaetBuffListFunction createBuffListFunction = null
+
+public function setCreateBuffListFunction(CreaetBuffListFunction createBuffList)
+    if createBuffListFunction != null
+        error("The createBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setCreateBuffListFunction.")
+    else
+        createBuffListFunction = createBuffList
+
 
 /*
     configuration: useNativeBuffListAllocation
@@ -32,10 +50,6 @@ public function setGetBuffListFunction(GetBuffListFunction getBuffList)
 constant unitToBuffList = new HashMap<unit, BuffList>()
 
 public function useNativeBuffListAllocation()
-    onEnter( () -> (begin
-        if not getEnterLeaveUnit().hasAbility('Aloc')
-            unitToBuffList.put(getEnterLeaveUnit(), new BuffList())
-    end))
     onLeave( () -> (begin
         if not getEnterLeaveUnit().hasAbility('Aloc')
             let bList = getBuffListFunction.getBuffList(getEnterLeaveUnit())
@@ -45,6 +59,12 @@ public function useNativeBuffListAllocation()
                     b.dispel()
 
                 destroy bList
+    end))
+
+    setCreateBuffListFunction( (unit u) -> (begin
+        let bList = new BuffList
+        unitToBuffList.put(u, bList)
+        return bList
     end))
 
     setGetBuffListFunction( (unit u) -> (begin
@@ -167,6 +187,8 @@ public class BuffType
 
     /** This buff is applied by using a dummy caster to cast the ability on the target. */
     construct(int abilityId, string orderString, int buffId, boolean positive, boolean magical)
+        buffTypeCount++
+
         //onFirst -> cast the spell
         //onEnd -> dispel the buff
         this.positive = positive
@@ -287,6 +309,7 @@ public class BuffList
     private LinkedList<Buff> linkedList
 
     construct()
+        buffListCount++
         linkedList = new LinkedList<Buff>
 
 
@@ -326,6 +349,7 @@ public class BuffList
         return this.linkedList
 
     ondestroy
+        buffListCount--
         destroy linkedList
 
 public class Buff
@@ -348,12 +372,12 @@ public class Buff
     private static Buff currentBuff 
 
     construct(unit target, unit caster, real duration, BuffType buffType, int level)
+        buffCount++
         this.expireTimer = getTimer()
             ..setData(this castTo int)
             ..start(duration, function expireStatic)
-        if getBuffListFunction.getBuffList(target) == null
-            error("Cannot add buff to unit without a BuffList")
-            destroy this
+        if getBuffListFunction.getBuffList(target) == null //allocate new buffList
+            createBuffListFunction.createBuffList(target)
         else
             this.caster = caster
             this.target = target
@@ -471,7 +495,7 @@ public class Buff
         //return currentBuff
 
     ondestroy
-        
+        buffCount--
         destroyed = true
 
         BuffList buffList = getBuffListFunction.getBuffList(target)
@@ -485,3 +509,8 @@ public class Buff
 
         
         //do not modify triggers. They belong to the BuffType
+
+public function debugBuff()
+    print("BuffTypeCount = "+buffTypeCount.toString())
+    print("BuffListCount = "+buffListCount.toString())
+    print("BuffCount = "+buffCount.toString())
