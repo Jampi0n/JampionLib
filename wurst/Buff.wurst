@@ -246,6 +246,7 @@ public class BuffType
         let target = whichBuff.getTarget()
         buffType.abilities.forEach( (int abilityId ) -> (begin
             target.addAbility(abilityId)
+            target.makeAbilityPermanent(abilityId, true)
             target.setAbilityLevel(abilityId, whichBuff.getLevel())
         end) )
 
@@ -378,53 +379,53 @@ public class Buff
             ..start(duration, function expireStatic)
         if getBuffListFunction.getBuffList(target) == null //allocate new buffList
             createBuffListFunction.createBuffList(target)
+
+        this.caster = caster
+        this.target = target
+        this.level = level
+        this.buffType = buffType
+        this.onFirst = buffType.onFirst
+        this.onStack = buffType.onStack
+        this.onApply = buffType.onApply
+        this.onExpire = buffType.onExpire
+        this.onDispel = buffType.onDispel
+        this.onEnd = buffType.onEnd
+        this.onPeriodic = buffType.onPeriodic
+        if(this.onPeriodic!=null)
+            this.periodicTimer = getTimer()
+                ..setData(this castTo int)
+                ..startPeriodic(buffType.getPeriodicTime(), function onPeriodicStatic)
         else
-            this.caster = caster
-            this.target = target
-            this.level = level
-            this.buffType = buffType
-            this.onFirst = buffType.onFirst
-            this.onStack = buffType.onStack
-            this.onApply = buffType.onApply
-            this.onExpire = buffType.onExpire
-            this.onDispel = buffType.onDispel
-            this.onEnd = buffType.onEnd
-            this.onPeriodic = buffType.onPeriodic
-            if(this.onPeriodic!=null)
-                this.periodicTimer = getTimer()
-                    ..setData(this castTo int)
-                    ..startPeriodic(buffType.getPeriodicTime(), function onPeriodicStatic)
-            else
-                this.periodicTimer = null
+            this.periodicTimer = null
 
-            currentBuff = this
+        currentBuff = this
 
 
-            if(this.onApply!=null)
-                for BuffEventClosure cb in this.onApply
+        if(this.onApply!=null)
+            for BuffEventClosure cb in this.onApply
+                cb.run(this)
+
+        let oldBuff = BuffList.getBuffOfType(this.target, this.buffType)
+
+        if(oldBuff!=null)
+            //print("stack")
+
+            if oldBuff.destroyed == true
+                print("old buff already destroyed")
+
+            if(this.onStack!=null)
+                for BuffEventClosure cb in this.onStack
+                    cb.run(this)
+            oldBuff.update(this.caster, duration)
+            destroy this
+        else
+            //print("first")
+            getBuffListFunction.getBuffList(target).add(this)
+            if(this.onFirst!=null)
+                for BuffEventClosure cb in this.onFirst
                     cb.run(this)
 
-            let oldBuff = BuffList.getBuffOfType(this.target, this.buffType)
-
-            if(oldBuff!=null)
-                //print("stack")
-
-                if oldBuff.destroyed == true
-                    print("old buff already destroyed")
-
-                if(this.onStack!=null)
-                    for BuffEventClosure cb in this.onStack
-                        cb.run(this)
-                oldBuff.update(this.caster, duration)
-                destroy this
-            else
-                //print("first")
-                getBuffListFunction.getBuffList(target).add(this)
-                if(this.onFirst!=null)
-                    for BuffEventClosure cb in this.onFirst
-                        cb.run(this)
-
-            //print(this.expireTimer.getRemaining())
+        //print(this.expireTimer.getRemaining())
         
 
     private function onPeriodic()
