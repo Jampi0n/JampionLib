@@ -74,6 +74,7 @@ public class Missile
         this.owner = owner
         this.direction = direction
         this.speed = speed
+        this.dummy.setScale(1)
 
         this.updateTimer = getTimer()
             ..setData(this castTo int)
@@ -173,6 +174,11 @@ public class Missile
     function getDirection() returns angle
         return this.direction
     
+    function setScale(real scale)
+        this.dummy.setScale(scale)
+
+    function getDummy() returns unit
+        return this.dummy
 
     static function getTriggerMissile() returns Missile
         return currentMissile

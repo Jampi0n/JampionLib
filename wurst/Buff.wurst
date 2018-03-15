@@ -82,9 +82,10 @@ public function dispelBuffsOnDeath()
         ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DEATH)
         ..addAction(() -> (begin
             //delay, so in case the unit dies inside a BuffEventClosure, the buff does not get destroyed.
+            let u = GetTriggerUnit()
             doAfter(0, () ->(begin
             
-                let bList = getBuffListFunction.getBuffList(GetTriggerUnit())
+                let bList = getBuffListFunction.getBuffList(u)
 
                 if bList != null
                     for Buff b in bList.getLinkedList()
@@ -374,9 +375,12 @@ public class Buff
 
     construct(unit target, unit caster, real duration, BuffType buffType, int level)
         buffCount++
+       
         this.expireTimer = getTimer()
             ..setData(this castTo int)
-            ..start(duration, function expireStatic)
+        if duration > -0.5
+            this.expireTimer.start(duration, function expireStatic)
+
         if getBuffListFunction.getBuffList(target) == null //allocate new buffList
             createBuffListFunction.createBuffList(target)
 
@@ -416,7 +420,7 @@ public class Buff
             if(this.onStack!=null)
                 for BuffEventClosure cb in this.onStack
                     cb.run(this)
-            oldBuff.update(this.caster, duration)
+            oldBuff.update(this.caster, duration, level)
             destroy this
         else
             //print("first")
@@ -468,13 +472,15 @@ public class Buff
         Buff thisBuff = t.getData() castTo Buff
         thisBuff.expire()
         
-    function update(unit newCaster, real newDuration)
+    function update(unit newCaster, real newDuration, int newLevel)
         this.caster = newCaster
-        if(newDuration > this.expireTimer.getRemaining())
+        this.level = newLevel
+        if newDuration < -0.5 or newDuration > this.expireTimer.getRemaining()
             this.expireTimer.release()
             this.expireTimer = getTimer()
                 ..setData(this castTo int)
-                ..start(newDuration, function expireStatic)
+            if newDuration > -0.5
+                this.expireTimer.start(newDuration, function expireStatic)
 
 
     function getCaster() returns unit

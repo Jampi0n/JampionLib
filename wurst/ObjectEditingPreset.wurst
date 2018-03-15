@@ -80,7 +80,7 @@ public class ArtilleryDetection
         return dummyId
 
         
-    static  function createArtilleryDummy(real launchZ, string projectile, int missileSpeed, real arc, int detectionUnitTypeId) returns int
+    static  function createArtilleryDummy(real launchZ, real scale, string projectile, int missileSpeed, real arc, int detectionUnitTypeId) returns int
         let dummyId = UNIT_ID_GEN.next()
         let abilId = ABIL_ID_GEN.next()
         new UnitDefinition(dummyId, 'umtw')
@@ -108,6 +108,8 @@ public class ArtilleryDetection
             ..setSightRadiusNight(0)
             ..setUpgradesUsed("")
             ..setUnitSoundSet("")
+            ..setScaleProjectiles(true)
+            ..setScalingValue(scale)
 
         new AbilityDefinitionPlagueToss(abilId)
             ..setWardUnitType(1, int2fourchar(detectionUnitTypeId))
@@ -122,13 +124,14 @@ public function createDummyBuff() returns int
     new BuffDefinition(buffId, 'BHwe')
     return buffId
 
-public function createBasicBuff(string name, string desc, string icon, string model) returns int
+public function createBasicBuff(string name, string desc, string icon, string model, string attachment) returns int
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
         ..setTooltipNormal(1, name)
         ..setTooltipNormalExtended(1, desc)
         ..setIcon(icon)
         ..setArtTarget(1, model)
+        ..setTargetAttachmentPoint0(1, attachment)
     return buffId
 
 public function createAuraBuff(string name, string desc, string icon) returns int
@@ -139,10 +142,11 @@ public function createAuraBuff(string name, string desc, string icon) returns in
         ..setIcon(icon)
     return buffId
 
-public function createNegativeBuffAbility(int levels, int buffId, string model) returns integer
+public function createNegativeBuffAbility(int levels, int buffId, string model, string attachment) returns integer
     let abilityId = ABIL_ID_GEN.next()
     let aDef = new AbilityDefinitionAuraSlow(abilityId)
         ..setArtTarget(model)
+        ..setTargetAttachmentPoint(attachment)
         ..hideIcon()
     for i = 1 to levels
         aDef
@@ -153,10 +157,11 @@ public function createNegativeBuffAbility(int levels, int buffId, string model) 
             ..setBuffs(i, int2fourchar(buffId))
     return abilityId
 
-public function createPositiveBuffAbility(int levels, int buffId, string model) returns integer
+public function createPositiveBuffAbility(int levels, int buffId, string model, string attachment) returns integer
     let abilityId = ABIL_ID_GEN.next()
     let aDef = new AbilityDefinitionUnholyAuracreep(abilityId)
         ..setArtTarget(model)
+        ..setTargetAttachmentPoint(attachment)
         ..hideIcon()
     for i = 1 to levels
         aDef
