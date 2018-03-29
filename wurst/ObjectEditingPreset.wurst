@@ -80,14 +80,14 @@ public class ArtilleryDetection
         return dummyId
 
         
-    static  function createArtilleryDummy(real launchZ, real scale, string projectile, int missileSpeed, real arc, int detectionUnitTypeId) returns int
+    static  function createArtilleryDummy(real launchX, real launchY, real launchZ, real scale, string projectile, int missileSpeed, real arc, int detectionUnitTypeId) returns int
         let dummyId = UNIT_ID_GEN.next()
         let abilId = ABIL_ID_GEN.next()
         new UnitDefinition(dummyId, 'umtw')
             ..setNormalAbilities("Aloc,"+int2fourchar(abilId))
             ..setModelFile("")
-            ..setProjectileLaunchX(0)
-            ..setProjectileLaunchY(0)
+            ..setProjectileLaunchX(launchX)
+            ..setProjectileLaunchY(launchY)
             ..setProjectileLaunchZ(launchZ)
             ..setShadowImageUnit("")
             ..setAttack1AnimationBackswingPoint(0)

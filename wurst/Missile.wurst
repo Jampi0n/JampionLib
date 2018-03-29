@@ -16,7 +16,7 @@ public function setHitBoxFunction(HitBoxFunction hitBoxFunc)
 public interface HitBoxFunction
     function getHitBox(unit whichUnit) returns real
 
-function unit.getHitBox() returns real
+public function unit.getHitBox() returns real
     return hitBoxFunction.getHitBox(this)
 
 public interface MissileHitFunction

@@ -59,6 +59,7 @@ public function useNativeBuffListAllocation()
                     b.dispel()
 
                 destroy bList
+                unitToBuffList.remove(getEnterLeaveUnit())
     end))
 
     setCreateBuffListFunction( (unit u) -> (begin
@@ -371,6 +372,8 @@ public class Buff
     private timer periodicTimer = null
     protected boolean destroyed = false
 
+    private int customData = 0
+
     private static Buff currentBuff 
 
     construct(unit target, unit caster, real duration, BuffType buffType, int level)
@@ -495,13 +498,20 @@ public class Buff
     function getRemaining() returns real
         return this.expireTimer.getRemaining()
 
-    function getLevel() returns integer
+    function getLevel() returns int
         return this.level
+
+    function getData() returns int
+        return this.customData
+
+    function setData(int data)
+        this.customData = data
 
     //static function getTriggerBuff() returns Buff
         //return currentBuff
 
     ondestroy
+        
         buffCount--
         destroyed = true
 
@@ -514,7 +524,7 @@ public class Buff
         if this.periodicTimer != null
             this.periodicTimer.release()
 
-        
+        this.customData = 0
         //do not modify triggers. They belong to the BuffType
 
 public function debugBuff()
