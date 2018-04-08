@@ -445,7 +445,9 @@ public class Buff
     private static function onPeriodicStatic()
         let t = GetExpiredTimer()
         Buff thisBuff = t.getData() castTo Buff
-        thisBuff.onPeriodic()
+        if thisBuff != null
+            thisBuff.onPeriodic()
+        
     
     private function expire()
         currentBuff = this
@@ -473,7 +475,8 @@ public class Buff
     private static function expireStatic()
         let t = GetExpiredTimer()
         Buff thisBuff = t.getData() castTo Buff
-        thisBuff.expire()
+        if thisBuff != null
+            thisBuff.expire()
         
     function update(unit newCaster, real newDuration, int newLevel)
         this.caster = newCaster
@@ -521,8 +524,10 @@ public class Buff
             buffList.remove(this)
 
         this.expireTimer.release()
+        this.expireTimer.setData(0) //binds null to the timer
         if this.periodicTimer != null
             this.periodicTimer.release()
+            this.periodicTimer.setData(0) //binds null to the timer
 
         this.customData = 0
         //do not modify triggers. They belong to the BuffType
