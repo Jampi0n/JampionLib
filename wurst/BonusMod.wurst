@@ -69,6 +69,10 @@ function statToBonusAbiltiy(Stat whichStat) returns integer
             
 public function unit.setBonus(Stat whichStat, int bonus)
 
+    if not this.isType(UNIT_TYPE_HERO)
+        if whichStat == Stat.STR or whichStat == Stat.AGI or whichStat == Stat.INT
+            return
+
     int abilityId = statToBonusAbiltiy(whichStat)
     if abilityId == -1
         return

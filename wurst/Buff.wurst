@@ -422,7 +422,7 @@ public class Buff
 
             if(this.onStack!=null)
                 for BuffEventClosure cb in this.onStack
-                    cb.run(this)
+                    cb.run(oldBuff)
             oldBuff.update(this.caster, duration, level)
             destroy this
         else
