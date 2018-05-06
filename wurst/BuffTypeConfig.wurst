@@ -7,6 +7,7 @@ import AbilityObjEditing
 import BuffObjEditing
 import ObjectIds
 import InstantDummyCaster
+import MapBounds
 
 constant ABILITY_STUNNED = compiletime(ABIL_ID_GEN.next())
 constant ABILITY_SILENCED = compiletime(ABIL_ID_GEN.next())
@@ -123,6 +124,10 @@ function createObjectData()
         ..setTooltipNormalExtended(1, "This unit is untargetable; it cannot be targeted.")
 
 init
+
+    CreateFogModifierRect(DUMMY_PLAYER, FOG_OF_WAR_VISIBLE, boundRect, false, true)
+        ..start()
+
     var abilityList = new LinkedList<int>
     ..add(ABILITY_DISARMED_BUFF)
     ..add(ABILITY_DISARMED_EFFECT)
@@ -141,9 +146,8 @@ init
 
     ENSNARED
         ..addFirstFunction((Buff thisBuff) ->(begin
-        let caster = thisBuff.getCaster()
         let target = thisBuff.getTarget()
-        InstantDummyCaster.castTarget(caster.getOwner(), ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
+        InstantDummyCaster.castTarget(DUMMY_PLAYER, ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
     end))
         ..addEndFunction((Buff thisBuff) ->(begin
         let target = thisBuff.getTarget()

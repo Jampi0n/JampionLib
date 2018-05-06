@@ -124,6 +124,12 @@ public function createDummyBuff() returns int
     new BuffDefinition(buffId, 'BHwe')
     return buffId
 
+public function createDummyBuff(string name) returns int
+    let buffId = BUFF_ID_GEN.next()
+    new BuffDefinition(buffId, 'BHwe')
+        ..setTooltipNormal(1, name)
+    return buffId
+
 public function createBasicBuff(string name, string desc, string icon, string model, string attachment) returns int
     assertTrue(desc != "", "No description set for buff "+name+".")
     assertTrue(name != "", "No name set for buff.")

@@ -232,9 +232,8 @@ public class BuffType
 
     static function castDummySpell(Buff whichBuff)
         let buffType = whichBuff.getBuffType()
-        let caster = whichBuff.getCaster()
         let target = whichBuff.getTarget()
-        InstantDummyCaster.castTarget(caster.getOwner(), buffType.dummyAbilityId, 1, buffType.dummyOrderId, target, target.getPos())
+        InstantDummyCaster.castTarget(DUMMY_PLAYER, buffType.dummyAbilityId, 1, buffType.dummyOrderId, target, target.getPos())
 
 
     static function removeDummyBuff(Buff whichBuff)
