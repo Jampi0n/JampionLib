@@ -324,12 +324,11 @@ public class BuffList
     static function getBuffOfType(unit target, BuffType buffType) returns Buff
         let buffList = getBuffListFunction.getBuffList(target)
         Buff retBuff = null
-        if buffList == null
-            return null
-        for Buff currentBuff in buffList.getLinkedList()
-            if(currentBuff.getBuffType() == buffType)
-                retBuff = currentBuff
-                return retBuff
+        if buffList != null
+            for Buff currentBuff in buffList.getLinkedList()
+                if(currentBuff.getBuffType() == buffType)
+                    retBuff = currentBuff
+                    break
         return retBuff
 
     static function hasBuffType(unit target, BuffType buffType) returns boolean
@@ -337,15 +336,14 @@ public class BuffList
 
     static function hasBuff(unit target, Buff whichBuff) returns boolean
         let buffList = getBuffListFunction.getBuffList(target)
-        if buffList == null
-            return false
-        let iter = buffList.linkedList.iterator()
-        while(iter.hasNext())
-            let next = iter.next()
-            if(next == whichBuff)
-                return true
-        destroy iter
-        return false
+        boolean ret = false
+        if buffList != null
+            for Buff bf in buffList.getLinkedList()
+                if bf == whichBuff
+                    ret = true
+                    break
+
+        return ret
 
     function getLinkedList() returns LinkedList<Buff>
         return this.linkedList

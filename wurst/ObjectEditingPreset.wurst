@@ -21,7 +21,7 @@ public function createNoEffectAbiltiy(int newId) returns AbilityDefinition
 public function createTargetMissile(int newId, int buffId) returns AbilityDefinitionAlchemistAcidBomb
     let aDef = new AbilityDefinitionAlchemistAcidBomb(newId)
     for i = 1 to 5
-        aDef.setBuffs(i, int2fourchar(buffId))
+        aDef.setBuffs(i, buffId.toRawCode())
         aDef.setArmorPenalty(i, 0)
         aDef.setPrimaryDamage(i, 0)
         aDef.setSecondaryDamage(i, 0)
@@ -84,7 +84,7 @@ public class ArtilleryDetection
         let dummyId = UNIT_ID_GEN.next()
         let abilId = ABIL_ID_GEN.next()
         new UnitDefinition(dummyId, 'umtw')
-            ..setNormalAbilities("Aloc,"+int2fourchar(abilId))
+            ..setNormalAbilities("Aloc,"+abilId.toRawCode())
             ..setModelFile("")
             ..setProjectileLaunchX(launchX)
             ..setProjectileLaunchY(launchY)
@@ -112,7 +112,7 @@ public class ArtilleryDetection
             ..setScalingValue(scale)
 
         new AbilityDefinitionPlagueToss(abilId)
-            ..setWardUnitType(1, int2fourchar(detectionUnitTypeId))
+            ..setWardUnitType(1, detectionUnitTypeId.toRawCode())
             ..setRequirements("")
 
         return dummyId
@@ -164,7 +164,7 @@ public function createNegativeBuffAbility(int levels, int buffId, string model, 
             ..setAreaofEffect(i, 1)
             ..setMovementSpeedFactor(i, 0)
             ..setAttackSpeedFactor(i, 0)
-            ..setBuffs(i, int2fourchar(buffId))
+            ..setBuffs(i, buffId.toRawCode())
     return abilityId
 
 public function createPositiveBuffAbility(int levels, int buffId, string model, string attachment) returns integer
@@ -179,6 +179,6 @@ public function createPositiveBuffAbility(int levels, int buffId, string model, 
             ..setAreaofEffect(i, 1)
             ..setMovementSpeedIncrease(i, 0)
             ..setLifeRegenerationIncrease(i, 0)
-            ..setBuffs(i, int2fourchar(buffId))
+            ..setBuffs(i, buffId.toRawCode())
     return abilityId
 
