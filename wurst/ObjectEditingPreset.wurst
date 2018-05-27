@@ -28,7 +28,7 @@ public function createTargetMissile(int newId, int buffId) returns AbilityDefini
         aDef.setDamageInterval(i, 10)
         aDef.setDurationHero(i, 1)
         aDef.setDurationNormal(i, 1)
-        aDef.setAreaofEffect(i, 1)
+        aDef.setAreaofEffect(i, 0)
     return aDef
 
 public interface OnArtillerHit
@@ -133,6 +133,7 @@ public function createDummyBuff(string name) returns int
 public function createBasicBuff(string name, string desc, string icon, string model, string attachment) returns int
     assertTrue(desc != "", "No description set for buff "+name+".")
     assertTrue(name != "", "No name set for buff.")
+    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. :(")
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
         ..setTooltipNormal(1, name)
@@ -145,6 +146,8 @@ public function createBasicBuff(string name, string desc, string icon, string mo
 public function createAuraBuff(string name, string desc, string icon) returns int
     assertTrue(desc != "", "No description set for buff "+name+".")
     assertTrue(name != "", "No name set for buff.")
+    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. :(")
+
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
         ..setTooltipNormal(1, name)
