@@ -166,8 +166,14 @@ public class Missile
 
     function getOwner() returns unit
         return this.owner
+    function getPos() returns vec2
+        return this.dummy.getPos()
+    function setPos(vec2 pos)
+        this.dummy.setPos(pos)
     function getSpeed() returns real
         return this.speed
+    function setSpeed(real newSpeed)
+        this.speed = newSpeed
     function getSize() returns real
         return this.size
     function setSize(real newSize)
