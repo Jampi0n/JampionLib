@@ -322,13 +322,14 @@ public class BuffList
         this.linkedList.remove(removeBuff)
 
     static function getBuffOfType(unit target, BuffType buffType) returns Buff
-        let buffList = getBuffListFunction.getBuffList(target)
         Buff retBuff = null
-        if buffList != null
-            for Buff currentBuff in buffList.getLinkedList()
-                if(currentBuff.getBuffType() == buffType)
-                    retBuff = currentBuff
-                    break
+        let buffList = getBuffListFunction.getBuffList(target)
+        if buffType != null
+            if buffList != null
+                for Buff currentBuff in buffList.getLinkedList()
+                    if(currentBuff.getBuffType() == buffType)
+                        retBuff = currentBuff
+                        break
         return retBuff
 
     static function hasBuffType(unit target, BuffType buffType) returns boolean
