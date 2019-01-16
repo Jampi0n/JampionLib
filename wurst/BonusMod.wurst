@@ -69,7 +69,7 @@ function statToBonusAbiltiy(Stat whichStat) returns integer
             
 public function unit.setBonus(Stat whichStat, int bonus)
 
-    if not this.isType(UNIT_TYPE_HERO)
+    if not IsUnitIdType(this.getTypeId(), UNIT_TYPE_HERO) // isType(UNIT_TYPE_HERO) returns false for illusions
         if whichStat == Stat.STR or whichStat == Stat.AGI or whichStat == Stat.INT
             return
 
