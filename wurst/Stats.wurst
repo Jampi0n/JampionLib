@@ -12,9 +12,13 @@ public enum Stat
     STR // triggers + bonus mod
     AGI // triggers + bonus mod
     INT // triggers + bonus mod
+    CD // triggers
 
 public function Stat.toInt() returns int
     return this castTo int
+
+public function intToStat(int i) returns Stat
+    return i castTo Stat
 
 public function Stat.toString() returns string
     return (this castTo int).toString()
