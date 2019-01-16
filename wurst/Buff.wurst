@@ -247,8 +247,8 @@ public class BuffType
         let target = whichBuff.getTarget()
         buffType.abilities.forEach( (int abilityId ) -> (begin
             target.addAbility(abilityId)
-            target.makeAbilityPermanent(abilityId, true)
             target.setAbilityLevel(abilityId, whichBuff.getLevel())
+            target.makeAbilityPermanent(abilityId, true)
         end) )
 
     static function removeAuraAbility(Buff whichBuff)
