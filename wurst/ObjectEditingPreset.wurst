@@ -122,6 +122,7 @@ public class ArtilleryDetection
 public function createDummyBuff() returns int
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
+        ..setName(1, "Dummy_"+buffId.toRawCode())
     return buffId
 
 public function createDummyBuff(string name) returns int
@@ -133,7 +134,7 @@ public function createDummyBuff(string name) returns int
 public function createBasicBuff(string name, string desc, string icon, string model, string attachment) returns int
     assertTrue(desc != "", "No description set for buff "+name+".")
     assertTrue(name != "", "No name set for buff.")
-    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. :(")
+    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. Use ‚ instead (U+201A)")
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
         ..setTooltipNormal(1, name)
@@ -146,7 +147,7 @@ public function createBasicBuff(string name, string desc, string icon, string mo
 public function createAuraBuff(string name, string desc, string icon) returns int
     assertTrue(desc != "", "No description set for buff "+name+".")
     assertTrue(name != "", "No name set for buff.")
-    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. :(")
+    assertTrue(not desc.contains(","), ", cannot be displayed in buffs. Use this instead: >‚< (U+201A)")
 
     let buffId = BUFF_ID_GEN.next()
     new BuffDefinition(buffId, 'BHwe')
@@ -161,6 +162,7 @@ public function createNegativeBuffAbility(int levels, int buffId, string model, 
         ..setArtTarget(model)
         ..setTargetAttachmentPoint(attachment)
         ..hideIcon()
+        ..setLevels(levels)
     for i = 1 to levels
         aDef
             ..setTargetsAllowed(i, "invulnerable,self,vulnerable")
@@ -176,6 +178,7 @@ public function createPositiveBuffAbility(int levels, int buffId, string model, 
         ..setArtTarget(model)
         ..setTargetAttachmentPoint(attachment)
         ..hideIcon()
+        ..setLevels(levels)
     for i = 1 to levels
         aDef
             ..setTargetsAllowed(i, "invulnerable,self,vulnerable")
