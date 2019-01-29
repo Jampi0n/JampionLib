@@ -4,6 +4,7 @@ import ImageChar
 import LinkedList
 import HashMap
 import MapBounds
+import ErrorHandling
 
 /*
     Creates images for letters in a string
@@ -35,12 +36,102 @@ public class ImageStringType
     private int numberOfLines
     private LinkedList<string> lines
     private HashMap<int,int> widthPerLine
+    private int arrayId
+    private int arrayStartIndex
 
     protected int numberOfImages
-    protected static string array imagePath
-    protected static real array charX
-    protected static real array charY
-    protected static colorA array col
+    protected static int currentArray = 0 //store in multiple arrays from index 1 to 31k
+    protected static int currentIndex = 0
+    protected static string array imagePath0
+    protected static string array imagePath1
+    protected static string array imagePath2
+    protected static string array imagePath3
+    protected static real array charX0
+    protected static real array charX1
+    protected static real array charX2
+    protected static real array charX3
+    protected static real array charY0
+    protected static real array charY1
+    protected static real array charY2
+    protected static real array charY3
+    protected static int currentColorIndex = 0
+    protected static colorA array col0
+    protected static colorA array col1
+    protected static colorA array col2
+    protected static colorA array col3
+
+    function saveChar(string path, real x, real y)
+        if this.arrayId < 2
+            if this.arrayId == 0
+                ImageStringType.imagePath0[currentIndex] = path
+                ImageStringType.charX0[currentIndex] = x
+                ImageStringType.charY0[currentIndex] = y
+            else
+                ImageStringType.imagePath1[currentIndex] = path
+                ImageStringType.charX1[currentIndex] = x
+                ImageStringType.charY1[currentIndex] = y
+        else
+            if this.arrayId == 2
+                ImageStringType.imagePath2[currentIndex] = path
+                ImageStringType.charX2[currentIndex] = x
+                ImageStringType.charY2[currentIndex] = y
+            else
+                ImageStringType.imagePath3[currentIndex] = path
+                ImageStringType.charX3[currentIndex] = x
+                ImageStringType.charY3[currentIndex] = y
+
+        currentIndex++
+
+    function saveColor(colorA col)
+        if this.arrayId < 2
+            if this.arrayId == 0
+                ImageStringType.col0[currentColorIndex] = col
+            else
+                ImageStringType.col1[currentColorIndex] = col
+        else
+            if this.arrayId == 2
+                ImageStringType.col2[currentColorIndex] = col
+            else
+                ImageStringType.col3[currentColorIndex] = col
+
+        currentColorIndex++
+
+    function createAsImage(vec2 pos, int index) returns image
+        string path
+        real x
+        real y
+        colorA col
+        if this.arrayId < 2
+            if this.arrayId == 0
+                path = ImageStringType.imagePath0[this.arrayStartIndex + index]
+                x = ImageStringType.charX0[this.arrayStartIndex + index]
+                y = ImageStringType.charY0[this.arrayStartIndex + index]
+                col = ImageStringType.col0[this.arrayStartIndex + index]
+            else
+                path = ImageStringType.imagePath1[this.arrayStartIndex + index]
+                x = ImageStringType.charX1[this.arrayStartIndex + index]
+                y = ImageStringType.charY1[this.arrayStartIndex + index]
+                col = ImageStringType.col1[this.arrayStartIndex + index]
+        else
+            if this.arrayId == 2
+                path = ImageStringType.imagePath2[this.arrayStartIndex + index]
+                x = ImageStringType.charX2[this.arrayStartIndex + index]
+                y = ImageStringType.charY2[this.arrayStartIndex + index]
+                col = ImageStringType.col2[this.arrayStartIndex + index]
+            else
+                path = ImageStringType.imagePath3[this.arrayStartIndex + index]
+                x = ImageStringType.charX3[this.arrayStartIndex + index]
+                y = ImageStringType.charY3[this.arrayStartIndex + index]
+                col = ImageStringType.col3[this.arrayStartIndex + index]
+
+
+        let img = createImage(path, pos + vec2(x, y) ,CHAR_SIZE * size, CHAR_SIZE * size)
+        img.setColor(col)
+
+        return img
+
+
+
 
     construct(real width, Origin origin, string message, real size)
         this.width = width
@@ -48,11 +139,21 @@ public class ImageStringType
         this.message = message
         this.size = size
 
+        this.arrayId = currentArray
+        this.arrayStartIndex = currentIndex
+
         //split string into substrings for every line
         this.lines = splitStringIntoLines()
 
         //create positions
         createPositions()
+        if currentIndex >= 31760 //next string could reach limit
+            currentIndex = 0
+            currentArray++
+            print("!!! array id is now " + currentArray.toString() + "!!!")
+            if currentArray > 4
+                error("character limit reached!")
+
 
     private function createPositions()
         this.numberOfImages = 0
@@ -93,10 +194,11 @@ public class ImageStringType
                             originX[lineIndex] = CHAR_SIZE * 0.5 * size
                         setOriginX = true
 
-                    let arrayIndex = this.numberOfImages + MAX_IMAGES * (this castTo int) 
+                    /*let arrayIndex = this.numberOfImages + MAX_IMAGES * (this castTo int) 
                     ImageStringType.imagePath[arrayIndex] = imageChar.getFilePath()
                     ImageStringType.charX[arrayIndex] = originX[lineIndex] + currentWidth * size
-                    ImageStringType.charY[arrayIndex] = originY + ( -currentHeight + imageChar.getVerticalOffset())  * size
+                    ImageStringType.charY[arrayIndex] = originY + ( -currentHeight + imageChar.getVerticalOffset())  * size*/
+                    this.saveChar(imageChar.getFilePath(),  originX[lineIndex] + currentWidth * size, originY + ( -currentHeight + imageChar.getVerticalOffset())  * size)
                     this.numberOfImages++
                     currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
 
@@ -159,7 +261,9 @@ public class ImageStringType
                 if imageChar != null
                     lineReadWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
                     lineReadWord += c
-                    ImageStringType.col[i] = currentColor
+                    this.saveColor(currentColor)
+                    //ImageStringType.col[i] = currentColor
+
                     //print("save color: "+i.toString())
                     i++
                     //print("Read: >>" + currentColor.toColorString()+ c +"|r<<")
@@ -252,6 +356,33 @@ public class ImageStringType
 
         return list
 
+class ImageNode
+    ImageNode next
+    image img
+    construct(image img, ImageNode next)
+        this.next = next
+        this.img = img
+
+class ImageList
+
+    ImageNode root = null
+
+    construct()
+
+    function add(image img)
+        this.root = new ImageNode(img, this.root)
+
+    function destroyAll()
+        ImageNode node = root
+        while node != null
+            DestroyImage(node.img)
+            let prevNode = node
+            node = node.next
+            prevNode.next = null
+            prevNode.img = null
+            destroy prevNode
+
+        destroy this
 
 public class ImageString
 
@@ -268,7 +399,13 @@ public class ImageString
 
     private LinkedList<string> lines
     private HashMap<int,int> widthPerLine
-    private static image array images
+    //private static image array images
+
+    
+    //private LinkedList<image> images = new LinkedList<image> LinkedList does not work with images (TypeCasting)
+    private ImageList images = new ImageList()
+
+
     private int numberOfImages
 
     construct(ImageStringType stringPreset, vec2 pos, colorA col)
@@ -276,6 +413,43 @@ public class ImageString
 
     construct(ImageStringType stringPreset, vec2 pos)
         this.setup(stringPreset, pos, COLOR_WHITE, false)
+
+
+    /**
+    Creates a simple ImageString. Can only contain one line and does not support text codes.
+    */
+    construct(string message, vec2 pos, colorA col, real size, bool centered)
+        int i = 0
+        //let arrayOffset = MAX_IMAGES * (this castTo int)
+        int currentWidth = 0
+
+        real originX
+        int totalWidth = 0
+        if centered
+            for string c in message
+                let imageChar = ImageChar.getImageToChar(c)
+                if imageChar != null
+                    totalWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+            originX = - totalWidth * 0.5 * size + CHAR_SIZE * size * 0.5
+        else
+            originX = CHAR_SIZE * 0.5 * size
+            
+
+        for string c in message
+            let imageChar = ImageChar.getImageToChar(c)
+            if imageChar != null
+                let newImage = createImage(imageChar.getFilePath(), pos + vec2(originX + currentWidth * size, 0) ,CHAR_SIZE * size, CHAR_SIZE * size)
+                currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+                if newImage == null
+                    print("newImage == null")
+                newImage.setColor(col)
+                newImage.show()
+                //ImageString.images[i + arrayOffset] = newImage
+                this.images.add(newImage)
+                i++
+                
+
+        this.numberOfImages = i
 
     function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor)
         this.pos = pos
@@ -286,22 +460,29 @@ public class ImageString
         this.col = col
         this.useColor = useColor
 
+
+
         this.numberOfImages = stringPreset.numberOfImages
 
-        let arrayOffsetType = MAX_IMAGES * (stringPreset castTo int) 
-        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
+        //let arrayOffsetType = MAX_IMAGES * (stringPreset castTo int) 
+        //let arrayOffsetThis = MAX_IMAGES * (this castTo int)
 
         for i = 0 to this.numberOfImages - 1
-            let arrayIndex = i + arrayOffsetType
-            let newImage = createImage(ImageStringType.imagePath[arrayIndex], pos + vec2(ImageStringType.charX[arrayIndex], ImageStringType.charY[arrayIndex]) ,CHAR_SIZE * size, CHAR_SIZE * size)
+            //let arrayIndex = i + arrayOffsetType
+            let newImage = stringPreset.createAsImage(pos, i)
+            //createImage(ImageStringType.imagePath[arrayIndex], pos + vec2(ImageStringType.charX[arrayIndex], ImageStringType.charY[arrayIndex]) ,CHAR_SIZE * size, CHAR_SIZE * size)
+
+            if newImage == null
+                print("newImage == null")
 
             if useColor
                 newImage.setColor(this.col)
-            else
-                newImage.setColor(ImageStringType.col[arrayIndex])
+            //else
+                //newImage.setColor(ImageStringType.col[arrayIndex])
                 //print("load color: "+arrayIndex.toString())
             newImage.show()
-            ImageString.images[i + arrayOffsetThis] = newImage
+            //ImageString.images[i + arrayOffsetThis] = newImage
+            this.images.add(newImage)
 
 
 
@@ -436,12 +617,14 @@ public class ImageString
         return list*/
         
     ondestroy
-        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
-        for i = 0 to this.numberOfImages - 1
+        //let arrayOffsetThis = MAX_IMAGES * (this castTo int)
+        /*for i = 0 to this.numberOfImages - 1
             let img = ImageString.images[i + arrayOffsetThis]
 
             img.hide()
-            img.remove()
+            img.remove()*/
+        
+        this.images.destroyAll()
 
         if lines != null
             destroy lines
