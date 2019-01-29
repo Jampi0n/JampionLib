@@ -1,0 +1,50 @@
+package ChangeTexture
+
+/*
+https://www.hiveworkshop.com/threads/how-to-make-a-model-change-textures-ingame.222258/#3.0
+*/
+
+import ObjectIdGenerator
+import DestructableObjEditing
+import AbilityObjEditing
+
+constant DEST_ID_GEN = new IdGenerator('DM00')
+constant WAR_CLUB = compiletime(ABIL_ID_GEN.next())
+
+public function unit.changeTexture(int textureId)
+    let tree = createDestructable(textureId, this.getPos().polarOffset(this.getFacingAngle(), 12.0), angle(0), 0.1, 1)
+    this.addAbility(WAR_CLUB)
+    this.issueTargetOrder("grabtree", tree)
+    this.removeAbility(WAR_CLUB)
+    tree.remove()
+
+public function createTexture(string path) returns int
+    let id = DEST_ID_GEN.next()
+    let tree = new DestructableDefinition(id, 'LTlt')
+    tree.def
+        ..setReal("bflh", 0.0)
+        ..setString("btxf", path)
+        ..setString("bptx", "")
+        ..setBoolean("bsmm", false)
+        ..setString("bfil", "")
+        ..setBoolean("blit", false)
+        ..setInt("bvar", 0)
+        ..setString("bshd", "")
+        ..setBoolean("bonc", true)
+        ..setString("bdsn", "")
+        //..setInt("btxi", 100)
+    return id
+
+@compiletime
+function initWarClub()
+    let warClub = new AbilityDefinitionGrabTree(WAR_CLUB)
+    warClub
+        ..setAttachDelay(1, 0.0)
+        ..setDisabledAttackIndex(1, 3)
+        ..setEnabledAttackIndex(1, 3)
+        ..setMaximumAttacks(1, 0)
+        ..setRemoveDelay(1, 0)
+        ..setCastRange(1, 900)
+        ..setCooldown(1, 0)
+
+
