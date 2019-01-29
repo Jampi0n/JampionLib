@@ -1,0 +1,125 @@
+package ImageChar
+
+import HashMap
+import StringUtils
+
+/*
+    How to create images: 32x32
+    split into 5 parts vertically:
+    1px transparent border
+    10px top: capital letters, l, f ,t, etc.
+    10px mid: all letters
+    10px bottom: J, g, p, etc.
+    1px transparent border
+
+    use 1px border at left, then immediatly the letter
+
+    font: paint.net Bahnschrift SemiBold SemiConden
+
+*/
+
+constant string DIRECTORY = "Letters\\"
+
+class ImageChar
+    private int width // width in pixels
+    private string filePath
+    private string char
+    private int verticalOffset
+    static constant charToImageChar = new HashMap<string,ImageChar>
+    
+
+    construct(string char, string filePath, int width)
+        this.char = char
+        this.filePath = filePath
+        this.width = width
+        this.verticalOffset = 0
+        charToImageChar.put(char, this)
+
+    static function getImageToChar(string char) returns ImageChar
+        return charToImageChar.get(char)
+
+    function getFilePath() returns string
+        return this.filePath
+    
+    function getChar() returns string
+        return this.char
+
+    function getWidth() returns int
+        return this.width
+
+    protected function setVerticalOffset(int offset)
+        this.verticalOffset = offset
+
+    function getVerticalOffset() returns int
+        return this.verticalOffset
+
+function createImageChar(string char, string fileName, int width) returns ImageChar
+    return new ImageChar(char, DIRECTORY+fileName, width)
+
+function createCapitalLetter(string char, int width)  returns ImageChar
+    return new ImageChar(char, DIRECTORY+"Cap"+char, width)
+
+function createSmallLetter(string char, int width)  returns ImageChar
+    return new ImageChar(char, DIRECTORY+"Small"+char, width)
+
+function createDigit(string char, int width)  returns ImageChar
+    return new ImageChar(char, DIRECTORY+"Digit"+char, width)
+
+init
+    createCapitalLetter("A", 21)
+    createCapitalLetter("B", 18)
+    createCapitalLetter("C", 17)
+    createCapitalLetter("D", 18)
+    createCapitalLetter("E", 17)
+    createCapitalLetter("F", 16)
+    createCapitalLetter("G", 18)
+    createCapitalLetter("H", 18)
+    createCapitalLetter("I", 5)
+    createCapitalLetter("J", 15)
+    createCapitalLetter("K", 20)
+    createCapitalLetter("L", 16)
+    createCapitalLetter("M", 22)
+    createCapitalLetter("N", 19)
+    createCapitalLetter("O", 18)
+    createCapitalLetter("P", 18)
+    createCapitalLetter("Q", 21)
+    createCapitalLetter("R", 19)
+    createCapitalLetter("S", 19)
+    createCapitalLetter("T", 18)
+    createCapitalLetter("U", 18)
+    createCapitalLetter("V", 20)
+    createCapitalLetter("W", 28)
+    createCapitalLetter("X", 19)
+    createCapitalLetter("Y", 19)
+    createCapitalLetter("Z", 16)
+
+
+    createImageChar(" ", "", 8)
+    createImageChar(",", "SymComma", 6).setVerticalOffset(-4)
+    createImageChar(".", "SymPeriod", 6)
+    createImageChar(";", "SymSemicolon", 6).setVerticalOffset(-4)
+    createImageChar("!", "SymExclamation", 6)
+    createImageChar("?", "SymQuestion", 15)
+    createImageChar("%", "SymPercent", 23)
+    createImageChar("*", "SymAsterisk", 14)
+    createImageChar("'", "SymApostrophe", 6)
+    createImageChar(":", "SymColon", 6)
+    createImageChar("-", "SymMinus", 15)
+    createImageChar("+", "SymPlus", 15)
+    createImageChar("\"", "SymQuotationMark", 11)
+    createImageChar("(", "SymRoundBracketOpen", 8)
+    createImageChar(")", "SymRoundBracketClose", 8)
+    createImageChar("[", "SymSquareBracketOpen", 7)
+    createImageChar("]", "SymSquareBracketClose", 7)
+    createImageChar("]", "SymSlash", 12)
+
+    createDigit("0", 16)
+    createDigit("1", 9)
+    createDigit("2", 16)
+    createDigit("3", 16)
+    createDigit("4", 18)
+    createDigit("5", 15)
+    createDigit("6", 16)
+    createDigit("7", 15)
+    createDigit("8", 16)
+    createDigit("9", 16)

@@ -1,0 +1,454 @@
+package ImageString
+
+import ImageChar
+import LinkedList
+import HashMap
+import MapBounds
+
+/*
+    Creates images for letters in a string
+*/
+
+public enum Origin
+    TOP_LEFT
+    TOP_CENTER
+    MIDDLE_LEFT
+    MIDDLE_CENTER
+
+constant CHAR_SIZE = 32
+constant CHAR_HOR_OFFSET = 5 
+constant CHAR_VER_OFFSET = 10 
+constant MAX_IMAGES = 1000
+
+/*
+    Stores position information of a string, so it can be quickly created as ImageString.
+*/
+public class ImageStringType
+
+    protected real width
+    protected Origin origin
+    protected string message
+    protected real size
+
+
+
+    private int numberOfLines
+    private LinkedList<string> lines
+    private HashMap<int,int> widthPerLine
+
+    protected int numberOfImages
+    protected static string array imagePath
+    protected static real array charX
+    protected static real array charY
+    protected static colorA array col
+
+    construct(real width, Origin origin, string message, real size)
+        this.width = width
+        this.origin = origin
+        this.message = message
+        this.size = size
+
+        //split string into substrings for every line
+        this.lines = splitStringIntoLines()
+
+        //create positions
+        createPositions()
+
+    private function createPositions()
+        this.numberOfImages = 0
+
+        this.numberOfLines = this.lines.size()
+
+        int lineIndex = 0
+
+        int currentHeight = 0
+
+        real originY = 0
+        real array originX
+
+
+        if this.origin == Origin.TOP_LEFT or  this.origin == Origin.TOP_CENTER
+            originY = - CHAR_SIZE * 0.5 * size
+        else if this.origin == Origin.MIDDLE_LEFT or this.origin == Origin.MIDDLE_CENTER
+            originY = (numberOfLines-1) * 0.5 * (CHAR_SIZE + CHAR_VER_OFFSET) * size
+
+
+
+        else if this.origin == Origin.MIDDLE_CENTER
+
+        for string line in lines
+            int currentWidth = 0
+
+
+
+            bool setOriginX = false
+
+            for string c in line
+                let imageChar = ImageChar.getImageToChar(c)
+                if imageChar != null
+                    if not setOriginX
+                        if this.origin == Origin.TOP_CENTER or this.origin == Origin.MIDDLE_CENTER
+                            originX[lineIndex]  =  - widthPerLine.get(lineIndex) * 0.5 * size + CHAR_SIZE * size * 0.5
+                        else if this.origin == Origin.TOP_LEFT or this.origin == Origin.MIDDLE_LEFT
+                            originX[lineIndex] = CHAR_SIZE * 0.5 * size
+                        setOriginX = true
+
+                    let arrayIndex = this.numberOfImages + MAX_IMAGES * (this castTo int) 
+                    ImageStringType.imagePath[arrayIndex] = imageChar.getFilePath()
+                    ImageStringType.charX[arrayIndex] = originX[lineIndex] + currentWidth * size
+                    ImageStringType.charY[arrayIndex] = originY + ( -currentHeight + imageChar.getVerticalOffset())  * size
+                    this.numberOfImages++
+                    currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+
+            lineIndex++
+            currentHeight += CHAR_SIZE + CHAR_VER_OFFSET
+
+    private function splitStringIntoLines() returns LinkedList<string>
+        int currentLine = 0
+
+        //The width of the word that is currently being read.
+        //If the word ends its width is added to lineStringWidth.
+        int lineReadWidth = 0
+        int lineStringWidth = 0
+        //The word that is currently being read.
+        //If the word ends it is added to lineString.
+        string lineReadWord = ""
+        string lineString = ""
+
+        colorA currentColor = COLOR_WHITE
+
+        let list = new LinkedList<string>
+        this.widthPerLine = new HashMap<int,int>
+        int i = MAX_IMAGES * (this castTo int)
+        int currentPos = 0
+        int length = this.message.length()
+        while currentPos < length
+            bool continue = false
+            //read char
+            string c = this.message.charAt(currentPos)
+
+            string checkCode = c + this.message.charAt(currentPos+1)
+            if not continue and checkCode == "|c"
+                //print("[START COLORCODE]")
+                currentColor = fromHexString(this.message.substring(currentPos+2, currentPos+9))
+                currentPos += 9
+                continue = true
+
+            if not continue and checkCode == "|r"
+                //print("[END COLORCODE]")
+                currentColor = COLOR_WHITE
+                currentPos += 1
+                continue = true
+
+            if not continue and checkCode == "|n"
+                lineString += lineReadWord
+                list.add(lineString)
+                //print("[SPLIT NEWLINE] >>" + lineString + "<<" + "width = " + (lineStringWidth + lineReadWidth).toString() )
+                widthPerLine.put(currentLine, lineStringWidth + lineReadWidth)
+                currentLine++
+                lineString = ""
+                lineStringWidth = 0
+                lineReadWord = ""
+                lineReadWidth = 0
+                currentPos += 1
+                continue = true
+
+
+            if not continue
+                let imageChar = ImageChar.getImageToChar(c)
+                if imageChar != null
+                    lineReadWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+                    lineReadWord += c
+                    ImageStringType.col[i] = currentColor
+                    //print("save color: "+i.toString())
+                    i++
+                    //print("Read: >>" + currentColor.toColorString()+ c +"|r<<")
+
+            if not continue and c == " "
+                lineString += lineReadWord
+                lineStringWidth += lineReadWidth
+                lineReadWord = ""
+                lineReadWidth = 0
+                continue = true
+
+            
+
+            if not continue and (lineStringWidth + lineReadWidth) * size > width
+                list.add(lineString)
+                widthPerLine.put(currentLine, lineStringWidth)
+                //print("[SPLIT WIDTH] >>" + lineString + "<<" + "width = " + lineStringWidth.toString() )
+                currentLine++
+                lineString = ""
+                lineStringWidth = 0
+
+            currentPos++
+
+        lineString += lineReadWord
+        lineStringWidth += lineReadWidth
+        //print("[SPLIT END] >>" + lineString + "<<" + "width = " + (lineStringWidth).toString() )
+        list.add(lineString)
+        widthPerLine.put(currentLine, lineStringWidth)
+
+        /*let list = new LinkedList<string>
+        this.widthPerLine = new HashMap<int,int>
+
+        int i = 0
+        int currentPos = 0
+        int length = this.message.length()
+        while currentPos < length
+            bool continue = false
+            string c = this.message.charAt(currentPos)
+            let imageChar = ImageChar.getImageToChar(c)
+            if imageChar != null
+                currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+                ImageStringType.col[i] = currentColor
+                i++
+            currentPos++
+
+            string checkCode = c + this.message.charAt(currentPos)
+
+            bool colorCode = checkCode == "|c"
+            if not continue and colorCode
+                currentColor = fromHexString(this.message.substring(currentPos+1, currentPos+9))
+
+            //print("checkLineBreak >>"+checkLineBreak+"<<")
+            bool lineBreak = checkCode == "|n"
+            if not continue and lineBreak
+                //print("[SPLIT LB] >>"+this.message.substring(lastText, currentPos-1)+"<<")
+                list.add(this.message.substring(lastText, currentPos-1))
+
+                widthPerLine.put(currentLine, currentWidth)
+                lastWidth = 0
+                currentLine++
+
+                currentPos++ //skip n of |n
+                lastText = currentPos
+                currentWidth = 0
+                continue = true
+
+            if not continue and currentWidth * size > width //string too long
+                //print("[SPLIT LG] >>"+this.message.substring(lastText, currentText)+"<<")
+                list.add(this.message.substring(lastText, currentText))
+
+                widthPerLine.put(currentLine, lastWidth)
+                lastWidth = 0
+                currentLine++
+
+                currentPos = currentText //go back to last word
+                lastText = currentText
+                currentWidth = 0
+                continue = true
+                
+
+            if not continue and c == " " //word finished
+                currentText = currentPos
+                lastWidth = currentWidth
+
+        //print("[SPLIT ED] >>"+this.message.substring(lastText, currentPos)+"<<")
+        list.add(this.message.substring(lastText, currentPos))
+
+        widthPerLine.put(currentLine, currentWidth)*/
+
+
+        return list
+
+
+public class ImageString
+
+    private vec2 pos
+    private real width
+    private Origin origin
+    private string message
+    private real size
+    private colorA col
+    private bool useColor
+
+    //private int numberOfLines
+
+
+    private LinkedList<string> lines
+    private HashMap<int,int> widthPerLine
+    private static image array images
+    private int numberOfImages
+
+    construct(ImageStringType stringPreset, vec2 pos, colorA col)
+        this.setup(stringPreset, pos, col, true)
+
+    construct(ImageStringType stringPreset, vec2 pos)
+        this.setup(stringPreset, pos, COLOR_WHITE, false)
+
+    function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor)
+        this.pos = pos
+        this.width = stringPreset.width
+        this.origin = stringPreset.origin
+        this.message = stringPreset.message
+        this.size = stringPreset.size
+        this.col = col
+        this.useColor = useColor
+
+        this.numberOfImages = stringPreset.numberOfImages
+
+        let arrayOffsetType = MAX_IMAGES * (stringPreset castTo int) 
+        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
+
+        for i = 0 to this.numberOfImages - 1
+            let arrayIndex = i + arrayOffsetType
+            let newImage = createImage(ImageStringType.imagePath[arrayIndex], pos + vec2(ImageStringType.charX[arrayIndex], ImageStringType.charY[arrayIndex]) ,CHAR_SIZE * size, CHAR_SIZE * size)
+
+            if useColor
+                newImage.setColor(this.col)
+            else
+                newImage.setColor(ImageStringType.col[arrayIndex])
+                //print("load color: "+arrayIndex.toString())
+            newImage.show()
+            ImageString.images[i + arrayOffsetThis] = newImage
+
+
+
+    /*construct(vec2 pos, real width, Origin origin, string message, real size, colorA col)
+        this.pos = pos
+        this.width = width
+        this.origin = origin
+        this.message = message
+        this.size = size
+        this.col = col
+
+        //split string into substrings for every line
+        this.lines = splitStringIntoLines()
+
+        //create images
+        createImages()
+
+    private function createImages()
+        this.numberOfImages = 0
+
+        this.numberOfLines = this.lines.size()
+
+        int lineIndex = 0
+
+        int currentHeight = 0
+
+        real originX = this.pos.x
+        real originY = this.pos.y
+
+        if this.origin == Origin.TOP_LEFT or this.origin == Origin.MIDDLE_LEFT
+            let c = ImageChar.getImageToChar(this.lines.getFirst().charAt(0))
+            originX = this.pos.x + c.getWidth() * 0.5 * size
+
+        if this.origin == Origin.TOP_LEFT or  this.origin == Origin.TOP_CENTER
+            originY = this.pos.y - CHAR_SIZE * 0.5 * size
+        else if this.origin == Origin.MIDDLE_LEFT or this.origin == Origin.MIDDLE_CENTER
+            originY = this.pos.y + (numberOfLines-1) * 0.5 * (CHAR_SIZE + CHAR_VER_OFFSET) * size
+
+
+
+        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
+
+        for string line in lines
+            int currentWidth = 0
+
+
+
+            bool setOriginX = false
+
+            for string c in line
+                let imageChar = ImageChar.getImageToChar(c)
+                if imageChar != null
+                    if not setOriginX
+                        if this.origin == Origin.TOP_CENTER or this.origin == Origin.MIDDLE_CENTER
+                            originX = this.pos.x - widthPerLine.get(lineIndex) * 0.5 * size + imageChar.getWidth() * size * 0.5
+                            setOriginX = true
+                            //print(widthPerLine.get(lineIndex))
+
+                    let newImage = createImage(imageChar.getFilePath(), vec2(originX, originY) + vec2(currentWidth * size, (-currentHeight + imageChar.getVerticalOffset())  * size) ,CHAR_SIZE * size, CHAR_SIZE * size)
+                    newImage.setColor(this.col)
+                    newImage.show()
+                    currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+                    ImageString.images[arrayOffsetThis + numberOfImages] = newImage
+                    this.numberOfImages++
+
+            lineIndex++
+            currentHeight += CHAR_SIZE + CHAR_VER_OFFSET
+                    
+
+
+    private function splitStringIntoLines() returns LinkedList<string>
+        int currentLine = 0
+        int currentWidth = 0
+    
+        int lastText = 0
+        int currentText = 0
+        int lastWidth = 0
+    
+        let list = new LinkedList<string>
+        this.widthPerLine = new HashMap<int,int>
+    
+        int currentPos = 0
+        int length = this.message.length()
+        while currentPos < length
+            bool continue = false
+            string c = this.message.charAt(currentPos)
+            let imageChar = ImageChar.getImageToChar(c)
+            if imageChar != null
+                currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+            currentPos++
+    
+            string checkLineBreak = c + this.message.charAt(currentPos)
+            //print("checkLineBreak >>"+checkLineBreak+"<<")
+            bool lineBreak = checkLineBreak == "|n"
+            if not continue and lineBreak
+                //print("[SPLIT LB] >>"+this.message.substring(lastText, currentPos-1)+"<<")
+                list.add(this.message.substring(lastText, currentPos-1))
+
+                widthPerLine.put(currentLine, currentWidth)
+                lastWidth = 0
+                currentLine++
+
+                currentPos++ //skip n of |n
+                lastText = currentPos
+                currentWidth = 0
+                continue = true
+    
+            if not continue and currentWidth * size > width //string too long
+                //print("[SPLIT LG] >>"+this.message.substring(lastText, currentText)+"<<")
+                list.add(this.message.substring(lastText, currentText))
+
+                widthPerLine.put(currentLine, lastWidth)
+                lastWidth = 0
+                currentLine++
+
+                currentPos = currentText //go back to last word
+                lastText = currentText
+                currentWidth = 0
+                continue = true
+                
+    
+            if not continue and c == " " //word finished
+                currentText = currentPos
+                lastWidth = currentWidth
+    
+        //print("[SPLIT ED] >>"+this.message.substring(lastText, currentPos)+"<<")
+        list.add(this.message.substring(lastText, currentPos))
+
+        widthPerLine.put(currentLine, currentWidth)
+    
+    
+        return list*/
+        
+    ondestroy
+        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
+        for i = 0 to this.numberOfImages - 1
+            let img = ImageString.images[i + arrayOffsetThis]
+
+            img.hide()
+            img.remove()
+
+        if lines != null
+            destroy lines
+        if widthPerLine != null
+            destroy widthPerLine
+        
+init
+    // the first image is null for some reason
+    // it can still be destroyed with DestroyImage(null)
+    createImage("Textures\\Abomination.blp", playableCenter, 64, 64)
