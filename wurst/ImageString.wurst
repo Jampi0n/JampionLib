@@ -125,7 +125,7 @@ public class ImageStringType
                 col = ImageStringType.col3[this.arrayStartIndex + index]
 
 
-        let img = createImage(path, pos + vec2(x, y) ,CHAR_SIZE * size, CHAR_SIZE * size)
+        let img = createImage(path, pos + vec2(x, y) ,CHAR_SIZE * size, CHAR_SIZE * size, Layer.L1)
         img.setColor(col)
 
         return img
@@ -180,11 +180,37 @@ public class ImageStringType
         for string line in lines
             int currentWidth = 0
 
-
+            print("line ="+line)
 
             bool setOriginX = false
 
-            for string c in line
+
+            int currentPos = 0
+            int length = line.length()
+            while currentPos < length
+                string c = line.charAt(currentPos)
+
+                
+
+                if c == "|"
+                    currentPos++
+                    
+                    string specialCode = "|"
+
+                    while true
+                        string readC = line.charAt(currentPos)
+                        
+                        if readC == "|"
+                            break
+                        specialCode += readC
+                        currentPos++
+
+                    print("read special code (pos): >>"+specialCode+"<<")
+
+                    c = specialCode
+
+                print("c="+c)
+
                 let imageChar = ImageChar.getImageToChar(c)
                 if imageChar != null
                     if not setOriginX
@@ -201,6 +227,10 @@ public class ImageStringType
                     this.saveChar(imageChar.getFilePath(),  originX[lineIndex] + currentWidth * size, originY + ( -currentHeight + imageChar.getVerticalOffset())  * size)
                     this.numberOfImages++
                     currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+
+                    print("save char")
+
+                currentPos++
 
             lineIndex++
             currentHeight += CHAR_SIZE + CHAR_VER_OFFSET
@@ -254,6 +284,28 @@ public class ImageStringType
                 lineReadWidth = 0
                 currentPos += 1
                 continue = true
+
+            if not continue and checkCode == "||" //special character
+                currentPos += 2
+                string specialCode = "|"
+                while true
+                    string readC = this.message.charAt(currentPos)
+                    if readC == "|"
+                        break
+                    specialCode += readC
+                    currentPos++
+
+
+                //print("read special code (width): >>"+specialCode+"<<")
+
+                let imageChar = ImageChar.getImageToChar(specialCode)
+                if imageChar != null
+                    lineReadWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
+                    lineReadWord += specialCode + "|"
+                    this.saveColor(COLOR_WHITE)
+
+                continue = true
+
 
 
             if not continue
@@ -408,17 +460,37 @@ public class ImageString
 
     private int numberOfImages
 
+    /**
+    Uses the specified color for all characters and ignores color codes)
+    */
     construct(ImageStringType stringPreset, vec2 pos, colorA col)
-        this.setup(stringPreset, pos, col, true)
+        this.setup(stringPreset, pos, col, true, null)
+
+    /**
+    Uses the specified color for all characters and ignores color codes)
+    */
+    construct(ImageStringType stringPreset, vec2 pos, colorA col, player forPlayer)
+        this.setup(stringPreset, pos, col, true, forPlayer)
 
     construct(ImageStringType stringPreset, vec2 pos)
-        this.setup(stringPreset, pos, COLOR_WHITE, false)
+        this.setup(stringPreset, pos, COLOR_WHITE, false, null)
 
+    construct(ImageStringType stringPreset, vec2 pos, player forPlayer)
+        this.setup(stringPreset, pos, COLOR_WHITE, false, forPlayer)
 
     /**
     Creates a simple ImageString. Can only contain one line and does not support text codes.
     */
     construct(string message, vec2 pos, colorA col, real size, bool centered)
+        simpleSetup(message, pos, col, size, centered, null)
+
+    /**
+    Creates a simple ImageString. Can only contain one line and does not support text codes.
+    */
+    construct(string message, vec2 pos, colorA col, real size, bool centered, player forPlayer)
+        simpleSetup(message, pos, col, size, centered, forPlayer)
+        
+    function simpleSetup(string message, vec2 pos, colorA col, real size, bool centered, player forPlayer)
         int i = 0
         //let arrayOffset = MAX_IMAGES * (this castTo int)
         int currentWidth = 0
@@ -438,12 +510,13 @@ public class ImageString
         for string c in message
             let imageChar = ImageChar.getImageToChar(c)
             if imageChar != null
-                let newImage = createImage(imageChar.getFilePath(), pos + vec2(originX + currentWidth * size, 0) ,CHAR_SIZE * size, CHAR_SIZE * size)
+                let newImage = createImage(imageChar.getFilePath(), pos + vec2(originX + currentWidth * size, 0) ,CHAR_SIZE * size, CHAR_SIZE * size, Layer.L1)
                 currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
                 if newImage == null
                     print("newImage == null")
                 newImage.setColor(col)
-                newImage.show()
+                if forPlayer == null or GetLocalPlayer() == forPlayer
+                    newImage.show()
                 //ImageString.images[i + arrayOffset] = newImage
                 this.images.add(newImage)
                 i++
@@ -451,7 +524,7 @@ public class ImageString
 
         this.numberOfImages = i
 
-    function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor)
+    function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor, player forPlayer)
         this.pos = pos
         this.width = stringPreset.width
         this.origin = stringPreset.origin
@@ -480,7 +553,8 @@ public class ImageString
             //else
                 //newImage.setColor(ImageStringType.col[arrayIndex])
                 //print("load color: "+arrayIndex.toString())
-            newImage.show()
+            if forPlayer == null or GetLocalPlayer() == forPlayer
+                newImage.show()
             //ImageString.images[i + arrayOffsetThis] = newImage
             this.images.add(newImage)
 

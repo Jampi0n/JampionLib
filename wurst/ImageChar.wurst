@@ -56,6 +56,10 @@ class ImageChar
 function createImageChar(string char, string fileName, int width) returns ImageChar
     return new ImageChar(char, DIRECTORY+fileName, width)
 
+//not really needed, since every image has to be recreated with a transparent borde :/
+function createImageCharEx(string char, string filePath, int width) returns ImageChar
+    return new ImageChar(char, filePath, width)
+
 function createCapitalLetter(string char, int width)  returns ImageChar
     return new ImageChar(char, DIRECTORY+"Cap"+char, width)
 
@@ -112,6 +116,10 @@ init
     createImageChar("[", "SymSquareBracketOpen", 7)
     createImageChar("]", "SymSquareBracketClose", 7)
     createImageChar("/", "SymSlash", 12)
+
+    createImageChar("|mana", "Symbols\\ToolTipManaIcon", 30)
+    createImageChar("|gold", "Symbols\\ToolTipGoldIcon", 30)
+    createImageChar("|lumber", "Symbols\\ToolTipLumberIcon", 30)
 
     createDigit("0", 16).setVerticalOffset(-1)
     createDigit("1", 9)
