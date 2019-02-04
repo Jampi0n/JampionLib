@@ -54,31 +54,39 @@ public class ImageStringType
     protected static real array charY1
     protected static real array charY2
     protected static real array charY3
+    protected static int array size0
+    protected static int array size1
+    protected static int array size2
+    protected static int array size3
     protected static int currentColorIndex = 0
     protected static colorA array col0
     protected static colorA array col1
     protected static colorA array col2
     protected static colorA array col3
 
-    function saveChar(string path, real x, real y)
+    function saveChar(string path, real x, real y, int size)
         if this.arrayId < 2
             if this.arrayId == 0
                 ImageStringType.imagePath0[currentIndex] = path
                 ImageStringType.charX0[currentIndex] = x
                 ImageStringType.charY0[currentIndex] = y
+                ImageStringType.size0[currentIndex] = size
             else
                 ImageStringType.imagePath1[currentIndex] = path
                 ImageStringType.charX1[currentIndex] = x
                 ImageStringType.charY1[currentIndex] = y
+                ImageStringType.size1[currentIndex] = size
         else
             if this.arrayId == 2
                 ImageStringType.imagePath2[currentIndex] = path
                 ImageStringType.charX2[currentIndex] = x
                 ImageStringType.charY2[currentIndex] = y
+                ImageStringType.size2[currentIndex] = size
             else
                 ImageStringType.imagePath3[currentIndex] = path
                 ImageStringType.charX3[currentIndex] = x
                 ImageStringType.charY3[currentIndex] = y
+                ImageStringType.size3[currentIndex] = size
 
         currentIndex++
 
@@ -101,31 +109,37 @@ public class ImageStringType
         real x
         real y
         colorA col
+        int charSize
+        let arrayIndex = this.arrayStartIndex + index
         if this.arrayId < 2
             if this.arrayId == 0
-                path = ImageStringType.imagePath0[this.arrayStartIndex + index]
-                x = ImageStringType.charX0[this.arrayStartIndex + index]
-                y = ImageStringType.charY0[this.arrayStartIndex + index]
-                col = ImageStringType.col0[this.arrayStartIndex + index]
+                path = ImageStringType.imagePath0[arrayIndex]
+                x = ImageStringType.charX0[arrayIndex]
+                y = ImageStringType.charY0[arrayIndex]
+                col = ImageStringType.col0[arrayIndex]
+                charSize = ImageStringType.size0[arrayIndex]
             else
-                path = ImageStringType.imagePath1[this.arrayStartIndex + index]
-                x = ImageStringType.charX1[this.arrayStartIndex + index]
-                y = ImageStringType.charY1[this.arrayStartIndex + index]
-                col = ImageStringType.col1[this.arrayStartIndex + index]
+                path = ImageStringType.imagePath1[arrayIndex]
+                x = ImageStringType.charX1[arrayIndex]
+                y = ImageStringType.charY1[arrayIndex]
+                col = ImageStringType.col1[arrayIndex]
+                charSize = ImageStringType.size1[arrayIndex]
         else
             if this.arrayId == 2
-                path = ImageStringType.imagePath2[this.arrayStartIndex + index]
-                x = ImageStringType.charX2[this.arrayStartIndex + index]
-                y = ImageStringType.charY2[this.arrayStartIndex + index]
-                col = ImageStringType.col2[this.arrayStartIndex + index]
+                path = ImageStringType.imagePath2[arrayIndex]
+                x = ImageStringType.charX2[arrayIndex]
+                y = ImageStringType.charY2[arrayIndex]
+                col = ImageStringType.col2[arrayIndex]
+                charSize = ImageStringType.size2[arrayIndex]
             else
-                path = ImageStringType.imagePath3[this.arrayStartIndex + index]
-                x = ImageStringType.charX3[this.arrayStartIndex + index]
-                y = ImageStringType.charY3[this.arrayStartIndex + index]
-                col = ImageStringType.col3[this.arrayStartIndex + index]
+                path = ImageStringType.imagePath3[arrayIndex]
+                x = ImageStringType.charX3[arrayIndex]
+                y = ImageStringType.charY3[arrayIndex]
+                col = ImageStringType.col3[arrayIndex]
+                charSize = ImageStringType.size3[arrayIndex]
 
 
-        let img = createImage(path, pos + vec2(x, y) ,CHAR_SIZE * size, CHAR_SIZE * size, Layer.L1)
+        let img = createImage(path, pos + vec2(x, y), charSize * size, charSize * size, Layer.L1)
         img.setColor(col)
 
         return img
@@ -180,8 +194,6 @@ public class ImageStringType
         for string line in lines
             int currentWidth = 0
 
-            print("line ="+line)
-
             bool setOriginX = false
 
 
@@ -205,11 +217,7 @@ public class ImageStringType
                         specialCode += readC
                         currentPos++
 
-                    print("read special code (pos): >>"+specialCode+"<<")
-
                     c = specialCode
-
-                print("c="+c)
 
                 let imageChar = ImageChar.getImageToChar(c)
                 if imageChar != null
@@ -224,11 +232,10 @@ public class ImageStringType
                     ImageStringType.imagePath[arrayIndex] = imageChar.getFilePath()
                     ImageStringType.charX[arrayIndex] = originX[lineIndex] + currentWidth * size
                     ImageStringType.charY[arrayIndex] = originY + ( -currentHeight + imageChar.getVerticalOffset())  * size*/
-                    this.saveChar(imageChar.getFilePath(),  originX[lineIndex] + currentWidth * size, originY + ( -currentHeight + imageChar.getVerticalOffset())  * size)
+                    this.saveChar(imageChar.getFilePath(),  originX[lineIndex] + (currentWidth + (imageChar.getSize() - CHAR_SIZE)/2) * size, originY + ( -currentHeight + imageChar.getVerticalOffset() + (imageChar.getSize() - CHAR_SIZE)/2 )  * size, imageChar.getSize() )
                     this.numberOfImages++
                     currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
 
-                    print("save char")
 
                 currentPos++
 
@@ -424,6 +431,24 @@ class ImageList
     function add(image img)
         this.root = new ImageNode(img, this.root)
 
+    function hideAll()
+        ImageNode node = root
+        while node != null
+            node.img.hide()
+            node = node.next
+
+    function showAll()
+        ImageNode node = root
+        while node != null
+            node.img.show()
+            node = node.next
+
+    function showAllForPlayer(player forPlayer)
+        ImageNode node = root
+        while node != null
+            node.img.showForPlayer(forPlayer)
+            node = node.next
+
     function destroyAll()
         ImageNode node = root
         while node != null
@@ -524,7 +549,7 @@ public class ImageString
 
         this.numberOfImages = i
 
-    function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor, player forPlayer)
+    private function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor, player forPlayer)
         this.pos = pos
         this.width = stringPreset.width
         this.origin = stringPreset.origin
@@ -537,166 +562,41 @@ public class ImageString
 
         this.numberOfImages = stringPreset.numberOfImages
 
-        //let arrayOffsetType = MAX_IMAGES * (stringPreset castTo int) 
-        //let arrayOffsetThis = MAX_IMAGES * (this castTo int)
-
-        for i = 0 to this.numberOfImages - 1
-            //let arrayIndex = i + arrayOffsetType
-            let newImage = stringPreset.createAsImage(pos, i)
-            //createImage(ImageStringType.imagePath[arrayIndex], pos + vec2(ImageStringType.charX[arrayIndex], ImageStringType.charY[arrayIndex]) ,CHAR_SIZE * size, CHAR_SIZE * size)
-
-            if newImage == null
-                print("newImage == null")
-
-            if useColor
-                newImage.setColor(this.col)
-            //else
-                //newImage.setColor(ImageStringType.col[arrayIndex])
-                //print("load color: "+arrayIndex.toString())
-            if forPlayer == null or GetLocalPlayer() == forPlayer
-                newImage.show()
-            //ImageString.images[i + arrayOffsetThis] = newImage
-            this.images.add(newImage)
-
-
-
-    /*construct(vec2 pos, real width, Origin origin, string message, real size, colorA col)
-        this.pos = pos
-        this.width = width
-        this.origin = origin
-        this.message = message
-        this.size = size
-        this.col = col
-
-        //split string into substrings for every line
-        this.lines = splitStringIntoLines()
-
-        //create images
-        createImages()
-
-    private function createImages()
-        this.numberOfImages = 0
-
-        this.numberOfLines = this.lines.size()
-
-        int lineIndex = 0
-
-        int currentHeight = 0
-
-        real originX = this.pos.x
-        real originY = this.pos.y
-
-        if this.origin == Origin.TOP_LEFT or this.origin == Origin.MIDDLE_LEFT
-            let c = ImageChar.getImageToChar(this.lines.getFirst().charAt(0))
-            originX = this.pos.x + c.getWidth() * 0.5 * size
-
-        if this.origin == Origin.TOP_LEFT or  this.origin == Origin.TOP_CENTER
-            originY = this.pos.y - CHAR_SIZE * 0.5 * size
-        else if this.origin == Origin.MIDDLE_LEFT or this.origin == Origin.MIDDLE_CENTER
-            originY = this.pos.y + (numberOfLines-1) * 0.5 * (CHAR_SIZE + CHAR_VER_OFFSET) * size
-
-
-
-        let arrayOffsetThis = MAX_IMAGES * (this castTo int)
-
-        for string line in lines
-            int currentWidth = 0
-
-
-
-            bool setOriginX = false
-
-            for string c in line
-                let imageChar = ImageChar.getImageToChar(c)
-                if imageChar != null
-                    if not setOriginX
-                        if this.origin == Origin.TOP_CENTER or this.origin == Origin.MIDDLE_CENTER
-                            originX = this.pos.x - widthPerLine.get(lineIndex) * 0.5 * size + imageChar.getWidth() * size * 0.5
-                            setOriginX = true
-                            //print(widthPerLine.get(lineIndex))
-
-                    let newImage = createImage(imageChar.getFilePath(), vec2(originX, originY) + vec2(currentWidth * size, (-currentHeight + imageChar.getVerticalOffset())  * size) ,CHAR_SIZE * size, CHAR_SIZE * size)
+        if useColor
+            if forPlayer == null
+                for i = 0 to this.numberOfImages - 1
+                    let newImage = stringPreset.createAsImage(pos, i)
                     newImage.setColor(this.col)
                     newImage.show()
-                    currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
-                    ImageString.images[arrayOffsetThis + numberOfImages] = newImage
-                    this.numberOfImages++
+                    this.images.add(newImage)
+            else
+                for i = 0 to this.numberOfImages - 1
+                    let newImage = stringPreset.createAsImage(pos, i)
+                    newImage.setColor(this.col)
+                    newImage.showForPlayer(forPlayer)
+                    this.images.add(newImage)
+        else
+            if forPlayer == null
+                for i = 0 to this.numberOfImages - 1
+                    let newImage = stringPreset.createAsImage(pos, i)
+                    newImage.show()
+                    this.images.add(newImage)
+            else
+                for i = 0 to this.numberOfImages - 1
+                    let newImage = stringPreset.createAsImage(pos, i)
+                    newImage.showForPlayer(forPlayer)
+                    this.images.add(newImage)
 
-            lineIndex++
-            currentHeight += CHAR_SIZE + CHAR_VER_OFFSET
-                    
+    function hide()
+        this.images.hideAll()
 
+    function show()
+        this.images.showAll()
 
-    private function splitStringIntoLines() returns LinkedList<string>
-        int currentLine = 0
-        int currentWidth = 0
-    
-        int lastText = 0
-        int currentText = 0
-        int lastWidth = 0
-    
-        let list = new LinkedList<string>
-        this.widthPerLine = new HashMap<int,int>
-    
-        int currentPos = 0
-        int length = this.message.length()
-        while currentPos < length
-            bool continue = false
-            string c = this.message.charAt(currentPos)
-            let imageChar = ImageChar.getImageToChar(c)
-            if imageChar != null
-                currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
-            currentPos++
-    
-            string checkLineBreak = c + this.message.charAt(currentPos)
-            //print("checkLineBreak >>"+checkLineBreak+"<<")
-            bool lineBreak = checkLineBreak == "|n"
-            if not continue and lineBreak
-                //print("[SPLIT LB] >>"+this.message.substring(lastText, currentPos-1)+"<<")
-                list.add(this.message.substring(lastText, currentPos-1))
-
-                widthPerLine.put(currentLine, currentWidth)
-                lastWidth = 0
-                currentLine++
-
-                currentPos++ //skip n of |n
-                lastText = currentPos
-                currentWidth = 0
-                continue = true
-    
-            if not continue and currentWidth * size > width //string too long
-                //print("[SPLIT LG] >>"+this.message.substring(lastText, currentText)+"<<")
-                list.add(this.message.substring(lastText, currentText))
-
-                widthPerLine.put(currentLine, lastWidth)
-                lastWidth = 0
-                currentLine++
-
-                currentPos = currentText //go back to last word
-                lastText = currentText
-                currentWidth = 0
-                continue = true
-                
-    
-            if not continue and c == " " //word finished
-                currentText = currentPos
-                lastWidth = currentWidth
-    
-        //print("[SPLIT ED] >>"+this.message.substring(lastText, currentPos)+"<<")
-        list.add(this.message.substring(lastText, currentPos))
-
-        widthPerLine.put(currentLine, currentWidth)
-    
-    
-        return list*/
+    function showForPlayer(player forPlayer)
+        this.images.showAllForPlayer(forPlayer)
         
     ondestroy
-        //let arrayOffsetThis = MAX_IMAGES * (this castTo int)
-        /*for i = 0 to this.numberOfImages - 1
-            let img = ImageString.images[i + arrayOffsetThis]
-
-            img.hide()
-            img.remove()*/
         
         this.images.destroyAll()
 

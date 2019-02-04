@@ -25,7 +25,8 @@ class ImageChar
     private string filePath
     private string char
     private int verticalOffset
-    static constant charToImageChar = new HashMap<string,ImageChar>
+    private int size
+    private static constant charToImageChar = new HashMap<int,ImageChar>
     
 
     construct(string char, string filePath, int width)
@@ -33,10 +34,18 @@ class ImageChar
         this.filePath = filePath
         this.width = width
         this.verticalOffset = 0
-        charToImageChar.put(char, this)
+        this.size = 32
+        if char.length() == 1 //single char, save as char
+            charToImageChar.put(char.toChar().c, this)
+        else //string, save as string
+            charToImageChar.put(char.getHash(), this)
+            
 
     static function getImageToChar(string char) returns ImageChar
-        return charToImageChar.get(char)
+        if char.length() == 1
+            return charToImageChar.get(char.toChar().c)
+        else
+            return charToImageChar.get(char.getHash())
 
     function getFilePath() returns string
         return this.filePath
@@ -47,8 +56,16 @@ class ImageChar
     function getWidth() returns int
         return this.width
 
-    protected function setVerticalOffset(int offset)
+    function getSize() returns int
+        return this.size
+
+    protected function setVerticalOffset(int offset) returns ImageChar
         this.verticalOffset = offset
+        return this
+
+    protected function setSize(int size) returns ImageChar
+        this.size = size
+        return this
 
     function getVerticalOffset() returns int
         return this.verticalOffset
@@ -64,7 +81,7 @@ function createCapitalLetter(string char, int width)  returns ImageChar
     return new ImageChar(char, DIRECTORY+"Cap"+char, width)
 
 function createSmallLetter(string char, int width)  returns ImageChar
-    return new ImageChar(char, DIRECTORY+"Small"+char, width)
+    return new ImageChar(char, DIRECTORY+"Small_"+char, width)
 
 function createDigit(string char, int width)  returns ImageChar
     return new ImageChar(char, DIRECTORY+"Digit"+char, width)
@@ -97,6 +114,34 @@ init
     createCapitalLetter("Y", 19)
     createCapitalLetter("Z", 16)
 
+    createSmallLetter("a", 16).setVerticalOffset(-1)
+    createSmallLetter("b", 15).setVerticalOffset(-1)
+    createSmallLetter("c", 16).setVerticalOffset(-1)
+    createSmallLetter("d", 16).setVerticalOffset(-1)
+    createSmallLetter("e", 16).setVerticalOffset(-1)
+    createSmallLetter("f", 11)
+    createSmallLetter("g", 16).setVerticalOffset(-9)
+    createSmallLetter("h", 16)
+    createSmallLetter("i", 5)
+    createSmallLetter("j", 8).setVerticalOffset(-9).setSize(64)
+    createSmallLetter("k", 17)
+    createSmallLetter("l", 8)
+    createSmallLetter("m", 26)
+    createSmallLetter("n", 16)
+    createSmallLetter("o", 16).setVerticalOffset(-1)
+    createSmallLetter("p", 15).setVerticalOffset(-9)
+    createSmallLetter("q", 16).setVerticalOffset(-9)
+    createSmallLetter("r", 13)
+    createSmallLetter("s", 16).setVerticalOffset(-1)
+    createSmallLetter("t", 11).setVerticalOffset(-1)
+    createSmallLetter("u", 15).setVerticalOffset(-1)
+    createSmallLetter("v", 16)
+    createSmallLetter("w", 25)
+    createSmallLetter("x", 16)
+    createSmallLetter("y", 17).setVerticalOffset(-9)
+    createSmallLetter("z", 15)
+
+
 
     createImageChar(" ", "", 8)
     createImageChar(",", "SymComma", 6).setVerticalOffset(-4)
@@ -117,9 +162,9 @@ init
     createImageChar("]", "SymSquareBracketClose", 7)
     createImageChar("/", "SymSlash", 12)
 
-    createImageChar("|mana", "Symbols\\ToolTipManaIcon", 30)
-    createImageChar("|gold", "Symbols\\ToolTipGoldIcon", 30)
-    createImageChar("|lumber", "Symbols\\ToolTipLumberIcon", 30)
+    createImageChar("|mana", "Symbols\\ToolTipManaIcon", 32).setVerticalOffset(-4).setSize(34)
+    createImageChar("|gold", "Symbols\\ToolTipGoldIcon", 32).setVerticalOffset(-4).setSize(34)
+    createImageChar("|lumber", "Symbols\\ToolTipLumberIcon", 32).setVerticalOffset(-4).setSize(34)
 
     createDigit("0", 16).setVerticalOffset(-1)
     createDigit("1", 9)
