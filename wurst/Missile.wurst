@@ -143,7 +143,7 @@ public class Missile
             nearby.destr()
     
     static function moveStatic()
-         (GetExpiredTimer().getData() castTo Missile).move()
+        (GetExpiredTimer().getData() castTo Missile).move()
 
     function destr()
         this.destroyed = true

@@ -8,9 +8,8 @@ import MapBounds
 import HashMap
 
 public function AbilityDefinition.hideIcon()
-        this
-            ..setButtonPositionNormalX(0)
-            ..setButtonPositionNormalY(-11)
+    this..setButtonPositionNormalX(0)
+    ..setButtonPositionNormalY(-11)
 
 public function createNoEffectAbiltiy(int newId) returns AbilityDefinition
     let aDef = new AbilityDefinition(newId, 'Amgl')
@@ -43,14 +42,14 @@ public class ArtilleryDetection
         if detectArtilleryTrigger == null
             artilleryClosureMap = new HashMap<int, OnArtillerHit>()
             detectArtilleryTrigger = CreateTrigger()
-                ..registerEnterRegion(boundRegion, null)
-                ..addAction(() ->(begin
-                    let unitTypeId = GetTriggerUnit().getTypeId()
-                    if artilleryClosureMap.has(unitTypeId)
-                        let u = GetTriggerUnit()
-                        artilleryClosureMap.get(unitTypeId).hit(u)
-                        u.remove()
-                end))
+            ..registerEnterRegion(boundRegion, null)
+            ..addAction(() ->(begin
+                let unitTypeId = GetTriggerUnit().getTypeId()
+                if artilleryClosureMap.has(unitTypeId)
+                    let u = GetTriggerUnit()
+                    artilleryClosureMap.get(unitTypeId).hit(u)
+                    u.remove()
+            end))
 
     static function registerArtilleryHit(int detectionUnitTypeId, OnArtillerHit onHit)
         detectArtillery()

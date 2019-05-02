@@ -18,8 +18,7 @@ public function unit.changeTexture(int textureId)
     this.removeAbility(WAR_CLUB)
     tree.remove()
 
-public function createTexture(string path) returns int
-    let id = DEST_ID_GEN.next()
+public function createTexture(string path, int id) returns int
     let tree = new DestructableDefinition(id, 'LTlt')
     tree.def
         ..setReal("bflh", 0.0)
@@ -34,6 +33,10 @@ public function createTexture(string path) returns int
         ..setString("bdsn", "")
         //..setInt("btxi", 100)
     return id
+
+public function createTexture(string path) returns int
+    let id = DEST_ID_GEN.next()
+    return createTexture(path, id)
 
 @compiletime
 function initWarClub()

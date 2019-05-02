@@ -80,19 +80,19 @@ public function useNativeBuffListAllocation()
 
 public function dispelBuffsOnDeath()
     CreateTrigger()
-        ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DEATH)
-        ..addAction(() -> (begin
-            //delay, so in case the unit dies inside a BuffEventClosure, the buff does not get destroyed.
-            let u = GetTriggerUnit()
-            doAfter(0, () ->(begin
-            
-                let bList = getBuffListFunction.getBuffList(u)
+    ..registerAnyUnitEvent(EVENT_PLAYER_UNIT_DEATH)
+    ..addAction(() -> (begin
+        //delay, so in case the unit dies inside a BuffEventClosure, the buff does not get destroyed.
+        let u = GetTriggerUnit()
+        doAfter(0, () ->(begin
+        
+            let bList = getBuffListFunction.getBuffList(u)
 
-                if bList != null
-                    for Buff b in bList.getLinkedList()
-                        b.dispel()
-            end))
+            if bList != null
+                for Buff b in bList.getLinkedList()
+                    b.dispel()
         end))
+    end))
         
 
 /*
