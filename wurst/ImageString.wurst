@@ -5,6 +5,7 @@ import LinkedList
 import HashMap
 import MapBounds
 import ErrorHandling
+import TimerUtils
 
 /*
     Creates images for letters in a string
@@ -64,6 +65,7 @@ public class ImageStringType
     protected static colorA array col2
     protected static colorA array col3
 
+    @inline
     function saveChar(string path, real x, real y, int size)
         if this.arrayId < 2
             if this.arrayId == 0
@@ -90,6 +92,7 @@ public class ImageStringType
 
         currentIndex++
 
+    @inline
     function saveColor(colorA col)
         if this.arrayId < 2
             if this.arrayId == 0
@@ -104,6 +107,7 @@ public class ImageStringType
 
         currentColorIndex++
 
+    @inline
     function createAsImage(vec2 pos, int index) returns image
         string path
         real x
@@ -139,7 +143,7 @@ public class ImageStringType
                 charSize = ImageStringType.size3[arrayIndex]
 
 
-        let img = createImage(path, pos + vec2(x, y), charSize * size, charSize * size, Layer.L1)
+        let img = createImage(path, pos + vec2(x, y), charSize * size, charSize * size, ImageLayer.L1)
         img.setColor(col)
 
         return img
@@ -449,10 +453,17 @@ class ImageList
             node.img.showForPlayer(forPlayer)
             node = node.next
 
+    function changeColor(colorA col)
+        ImageNode node = root
+        while node != null
+            node.img.setColor(col)
+            node = node.next
+
     function destroyAll()
         ImageNode node = root
         while node != null
-            DestroyImage(node.img)
+            if node.img != null
+                DestroyImage(node.img)
             let prevNode = node
             node = node.next
             prevNode.next = null
@@ -470,6 +481,11 @@ public class ImageString
     private real size
     private colorA col
     private bool useColor
+
+    private bool destroyed = false
+    private timer textTimer = null
+    private int createdImages = 0
+    private ImageStringType stringPreset
 
     //private int numberOfLines
 
@@ -489,19 +505,12 @@ public class ImageString
     Uses the specified color for all characters and ignores color codes)
     */
     construct(ImageStringType stringPreset, vec2 pos, colorA col)
-        this.setup(stringPreset, pos, col, true, null)
+        this.setup(stringPreset, pos, col, true)
 
-    /**
-    Uses the specified color for all characters and ignores color codes)
-    */
-    construct(ImageStringType stringPreset, vec2 pos, colorA col, player forPlayer)
-        this.setup(stringPreset, pos, col, true, forPlayer)
 
     construct(ImageStringType stringPreset, vec2 pos)
-        this.setup(stringPreset, pos, COLOR_WHITE, false, null)
+        this.setup(stringPreset, pos, COLOR_WHITE, false)
 
-    construct(ImageStringType stringPreset, vec2 pos, player forPlayer)
-        this.setup(stringPreset, pos, COLOR_WHITE, false, forPlayer)
 
     /**
     Creates a simple ImageString. Can only contain one line and does not support text codes.
@@ -521,6 +530,7 @@ public class ImageString
         int currentWidth = 0
 
         real originX
+        real originY = - CHAR_SIZE * 0.5 * size
         int totalWidth = 0
         if centered
             for string c in message
@@ -531,11 +541,10 @@ public class ImageString
         else
             originX = CHAR_SIZE * 0.5 * size
             
-
         for string c in message
             let imageChar = ImageChar.getImageToChar(c)
             if imageChar != null
-                let newImage = createImage(imageChar.getFilePath(), pos + vec2(originX + currentWidth * size, 0) ,CHAR_SIZE * size, CHAR_SIZE * size, Layer.L1)
+                let newImage = createImage(imageChar.getFilePath(), pos + vec2(originX + (currentWidth + (imageChar.getSize() - CHAR_SIZE)/2) * size, originY + ( imageChar.getVerticalOffset() + (imageChar.getSize() - CHAR_SIZE)/2 )  * size), imageChar.getSize() * size, imageChar.getSize() * size, ImageLayer.L1)
                 currentWidth += imageChar.getWidth() + CHAR_HOR_OFFSET
                 if newImage == null
                     print("newImage == null")
@@ -549,7 +558,37 @@ public class ImageString
 
         this.numberOfImages = i
 
-    private function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor, player forPlayer)
+    private function createImg()
+        for i = 0 to 31
+            if this.createdImages == this.numberOfImages
+                return
+            let newImage = stringPreset.createAsImage(pos, this.createdImages)
+            newImage.show()
+            this.images.add(newImage)
+            this.createdImages++
+        if this.createdImages < this.numberOfImages and not this.destroyed
+            this.textTimer.start(1.0/32, function onTimer)
+
+    private function createImgColored()
+        for i = 0 to 31
+            if this.createdImages == this.numberOfImages
+                return
+            let newImage = stringPreset.createAsImage(pos, this.createdImages)
+            newImage.setColor(this.col)
+            newImage.show()
+            this.images.add(newImage)
+            this.createdImages++
+        if this.createdImages < this.numberOfImages and not this.destroyed
+            this.textTimer.start(1.0/32, function onTimerColored)
+
+    private static function onTimer()
+        let imgString = GetExpiredTimer().getData() castTo ImageString
+        imgString.createImg()
+    private static function onTimerColored()
+        let imgString = GetExpiredTimer().getData() castTo ImageString
+        imgString.createImgColored()
+
+    private function setup(ImageStringType stringPreset, vec2 pos, colorA col, bool useColor)
         this.pos = pos
         this.width = stringPreset.width
         this.origin = stringPreset.origin
@@ -557,12 +596,25 @@ public class ImageString
         this.size = stringPreset.size
         this.col = col
         this.useColor = useColor
-
-
-
+        this.stringPreset = stringPreset
         this.numberOfImages = stringPreset.numberOfImages
 
+
+        this.textTimer = getTimer()
+        this.textTimer.setData(this castTo int)
         if useColor
+            createImgColored()
+        else
+            createImg()
+
+
+
+        /*or i = 0 to this.numberOfImages - 1
+            let newImage = stringPreset.createAsImage(pos, i)
+            newImage.show()
+            this.images.add(newImage)*/
+
+        /*if useColor
             if forPlayer == null
                 for i = 0 to this.numberOfImages - 1
                     let newImage = stringPreset.createAsImage(pos, i)
@@ -571,6 +623,8 @@ public class ImageString
                     this.images.add(newImage)
             else
                 for i = 0 to this.numberOfImages - 1
+                    if this.destroyed
+                        return
                     let newImage = stringPreset.createAsImage(pos, i)
                     newImage.setColor(this.col)
                     newImage.showForPlayer(forPlayer)
@@ -578,14 +632,18 @@ public class ImageString
         else
             if forPlayer == null
                 for i = 0 to this.numberOfImages - 1
+                    if this.destroyed
+                        return
                     let newImage = stringPreset.createAsImage(pos, i)
                     newImage.show()
                     this.images.add(newImage)
             else
                 for i = 0 to this.numberOfImages - 1
+                    if this.destroyed
+                        return
                     let newImage = stringPreset.createAsImage(pos, i)
                     newImage.showForPlayer(forPlayer)
-                    this.images.add(newImage)
+                    this.images.add(newImage)*/
 
     function hide()
         this.images.hideAll()
@@ -593,17 +651,22 @@ public class ImageString
     function show()
         this.images.showAll()
 
+    function changeColor(colorA col)
+        this.images.changeColor(col)
+
     function showForPlayer(player forPlayer)
         this.images.showAllForPlayer(forPlayer)
         
     ondestroy
-        
+        this.destroyed = true
         this.images.destroyAll()
 
         if lines != null
             destroy lines
         if widthPerLine != null
             destroy widthPerLine
+        if textTimer != null
+            textTimer.release()
         
 init
     // the first image is null for some reason
