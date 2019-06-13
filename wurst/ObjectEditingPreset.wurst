@@ -4,8 +4,16 @@ import AbilityObjEditing
 import BuffObjEditing
 import public ObjectIds
 import public ObjectIdGenerator
-import MapBounds
+import LinkedList
 import HashMap
+import ClosureTimers
+import ErrorHandling
+import OnUnitEnterLeave
+import Preloader
+
+constant MAX_ARTILLERY_MISSILES = 64
+constant MAX_ARTILLERY_AIR_TIME = 10.0
+constant MAX_MATCHING_RANGE = 16.0
 
 public function AbilityDefinition.hideIcon()
     this..setButtonPositionNormalX(0)
@@ -30,60 +38,123 @@ public function createTargetMissile(int newId, int buffId) returns AbilityDefini
         aDef.setAreaofEffect(i, 0)
     return aDef
 
-public interface OnArtillerHit
-    function hit(unit detectionUnit)
+
+//==========================================================================
+//
+//  Artillery
+//
+//==========================================================================
+
+function compiletime(LinkedList<int> list) returns LinkedList<int>
+    return list
+    
+constant artilleryTypeIdList = compiletime(createArtilleryTypeIds())
+int artilleryAbility = compiletime(generateArtilleryAbility())
+    
+int array artilleryIndexToTypeId
+constant artilleryTypeIdToIndex = new HashMap<int,int>
+
+function createArtilleryTypeIds() returns LinkedList<int>
+    let l = new LinkedList<int>
+    for i = 1 to MAX_ARTILLERY_MISSILES
+        let unitTypeId = UNIT_ID_GEN.next()
+        new UnitDefinition(unitTypeId, 'hfoo')
+        ..setName("Detection_" + i.toString())
+        ..setNormalAbilities("Aloc")
+        ..setModelFile("")
+        ..setShadowImageUnit("")
+        ..setAttacksEnabled(0)
+        ..setMovementType(MovementType.Fly)
+        ..setCollisionSize(0)
+        ..setFoodCost(0)
+        ..setSightRadiusDay(0)
+        ..setSightRadiusNight(0)
+        ..setUpgradesUsed("")
+        ..setUnitSoundSet("")
+        l.add(unitTypeId)
+    return l
+
+function generateArtilleryAbility() returns int
+    int abilId = ABIL_ID_GEN.next()
+    let aDef = new AbilityDefinitionPlagueToss(abilId)
+    aDef..setRequirements("")
+    ..setLevels(MAX_ARTILLERY_MISSILES)
+    int i = 1
+    for int unitTypeId in artilleryTypeIdList
+        aDef
+        ..setWardUnitType(i, unitTypeId.toRawCode() )
+        ..setTargetsAllowed(i, "ground,enemy,structure,debris,tree,wall,organic,neutral")
+        ..setDurationHero(i, 10.0)
+        ..setDurationNormal(i, 10.0)
+        i++
+    return abilId
+
+function setupDetectionDummies()
+    for i = 1 to MAX_ARTILLERY_MISSILES
+        artilleryIndexToTypeId[i] = artilleryTypeIdList.getFirst()
+        artilleryTypeIdToIndex.put(artilleryIndexToTypeId[i], i)
+        artilleryTypeIdList.removeAt(0)
+    destroy artilleryTypeIdList
+
+
+
+public interface OnArtilleryHit
+    function hit(unit detectionUnit, unit caster, int data)
 
 public class ArtilleryDetection
 
-    static trigger detectArtilleryTrigger = null
-    static HashMap<int, OnArtillerHit> artilleryClosureMap
+    private int random = -1
+    private unit caster
+    private int data
+    private OnArtilleryHit onHit
 
-    private static function detectArtillery()
-        if detectArtilleryTrigger == null
-            artilleryClosureMap = new HashMap<int, OnArtillerHit>()
-            detectArtilleryTrigger = CreateTrigger()
-            ..registerEnterRegion(boundRegion, null)
-            ..addAction(() ->(begin
-                let unitTypeId = GetTriggerUnit().getTypeId()
-                if artilleryClosureMap.has(unitTypeId)
-                    let u = GetTriggerUnit()
-                    artilleryClosureMap.get(unitTypeId).hit(u)
-                    u.remove()
-            end))
+    construct(unit caster, int data, OnArtilleryHit onHit)
+        if this castTo int > MAX_ARTILLERY_MISSILES
+            error("Too many missiles active at the same time. Increase MAX_ARTILLERY_MISSILES (=" + MAX_ARTILLERY_MISSILES.toString() + ")")
+            destroy this
+        else
+            this.caster = caster
+            this.data = data
+            this.onHit = onHit
 
-    static function registerArtilleryHit(int detectionUnitTypeId, OnArtillerHit onHit)
-        detectArtillery()
-        artilleryClosureMap.put(detectionUnitTypeId, onHit)
+            let random = GetRandomInt(0, 1000000)
+            this.random = random
+    
+            doAfter(MAX_ARTILLERY_AIR_TIME) -> 
+                if this.random == random
+                    destroy this
 
-    static function fireArtillery(player owner, int artilleyTypeId, vec2 start, vec2 target)
-        createUnit(owner, artilleyTypeId, start, start.angleTo(target))
-            ..setTimedLife(1)
-            ..issuePointOrder("attackground", target)
+    function impact(unit detectionUnit)
+        this.onHit.hit(detectionUnit, this.caster, this.data)
+        detectionUnit.remove()
+        destroy this
 
+    ondestroy
+        this.random = -1
+        destroy this.onHit
 
-    static  function createDetectionDummy() returns int
+    private static function onImpact()
+        int id = artilleryTypeIdToIndex.get(getEnterLeaveUnit().getTypeId())
+        if id != 0
+            (id castTo ArtilleryDetection).impact(getEnterLeaveUnit())
+
+    protected static function classInit()
+        onEnter( -> onImpact())
+      
+    static function fireArtillery(unit caster, int artilleyTypeId, vec2 start, vec2 target, OnArtilleryHit onHit)
+        fireArtillery(caster, artilleyTypeId, start, target, 0, onHit)
+            
+    static function fireArtillery(unit caster, int artilleyTypeId, vec2 start, vec2 target, int data, OnArtilleryHit onHit)
+        let artillery = createUnit(caster.getOwner(), artilleyTypeId, start, start.angleTo(target))
+        let detection = new ArtilleryDetection(caster, data, onHit)
+        artillery.setAbilityLevel(artilleryAbility, detection castTo int)
+        artillery.issuePointOrder("attackground", target)
+        artillery.setTimedLife(1)
+
+    static function createArtilleryDummy(real launchX, real launchY, real launchZ, real scale, string projectile, int missileSpeed, real arc) returns int
         let dummyId = UNIT_ID_GEN.next()
-        new UnitDefinition(dummyId, 'hfoo')
-            ..setNormalAbilities("Aloc")
-            ..setModelFile("")
-            ..setShadowImageUnit("")
-            ..setAttacksEnabled(0)
-            ..setMovementType(MovementType.Fly)
-            ..setCollisionSize(0)
-            ..setFoodCost(0)
-            ..setSightRadiusDay(0)
-            ..setSightRadiusNight(0)
-            ..setUpgradesUsed("")
-            ..setUnitSoundSet("")
-
-        return dummyId
-
-        
-    static  function createArtilleryDummy(real launchX, real launchY, real launchZ, real scale, string projectile, int missileSpeed, real arc, int detectionUnitTypeId) returns int
-        let dummyId = UNIT_ID_GEN.next()
-        let abilId = ABIL_ID_GEN.next()
         new UnitDefinition(dummyId, 'umtw')
-            ..setNormalAbilities("Aloc,"+abilId.toRawCode())
+            ..setNormalAbilities("Aloc,"+artilleryAbility.toRawCode())
             ..setModelFile("")
             ..setProjectileLaunchX(launchX)
             ..setProjectileLaunchY(launchY)
@@ -92,7 +163,7 @@ public class ArtilleryDetection
             ..setAttack1AnimationBackswingPoint(0)
             ..setAttack1AnimationDamagePoint(0)
             ..setAttack1AreaofEffectTargets("none")
-            ..setAttack1CooldownTime(100)
+            ..setAttack1CooldownTime(MAX_ARTILLERY_AIR_TIME+1)
             ..setAttack1ProjectileSpeed(missileSpeed)
             ..setAttack1ProjectileArt(projectile)
             ..setAttack1ProjectileArc(arc)
@@ -109,10 +180,6 @@ public class ArtilleryDetection
             ..setUnitSoundSet("")
             ..setScaleProjectiles(true)
             ..setScalingValue(scale)
-
-        new AbilityDefinitionPlagueToss(abilId)
-            ..setWardUnitType(1, detectionUnitTypeId.toRawCode())
-            ..setRequirements("")
 
         return dummyId
 
@@ -187,3 +254,7 @@ public function createPositiveBuffAbility(int levels, int buffId, string model, 
             ..setBuffs(i, buffId.toRawCode())
     return abilityId
 
+init
+    preloadAbility(artilleryAbility)
+    setupDetectionDummies()
+    ArtilleryDetection.classInit()
