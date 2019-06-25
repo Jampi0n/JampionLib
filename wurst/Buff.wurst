@@ -7,6 +7,7 @@ import OnUnitEnterLeave
 import HashMap
 import ErrorHandling
 import ClosureTimers
+import Execute
 
 int buffCount = 0
 int buffListCount = 0
@@ -141,7 +142,6 @@ A Buff that is removed wants to remove itself from the unit's buff list.
 However if a unit is removed the bufflist is removed first and then the bufflist removes all its buffs.
 
 */
-
 public interface BuffEventClosure
     function run(Buff whichBuff)
 
@@ -458,17 +458,16 @@ public class Buff
         destroy this
 
     function dispel()
-        //print("dispel buff: ")
-        //print((this castTo int).toString() )
-
         currentBuff = this
-        if(this.onDispel!=null)
-            for BuffEventClosure cb in this.onDispel
-                cb.run(this)
-        if(this.onEnd!=null)
-            for BuffEventClosure cb in this.onEnd
-                cb.run(this)
+        execute() () ->
+            if(this.onDispel!=null)
+                for BuffEventClosure cb in this.onDispel
+                    cb.run(this)
+            if(this.onEnd!=null)
+                for BuffEventClosure cb in this.onEnd
+                    cb.run(this)
         destroy this
+
 
     private static function expireStatic()
         let t = GetExpiredTimer()
@@ -476,7 +475,7 @@ public class Buff
         if thisBuff != null
             thisBuff.expire()
         
-    function update(unit newCaster, real newDuration, int newLevel)
+    private function update(unit newCaster, real newDuration, int newLevel)
         this.caster = newCaster
         this.level = newLevel
         if newDuration < -0.5 or newDuration > this.expireTimer.getRemaining()
