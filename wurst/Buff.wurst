@@ -13,6 +13,10 @@ int buffCount = 0
 int buffListCount = 0
 int buffTypeCount = 0
 
+public enum DispelLevel
+    DISPEL
+    BREAK
+    NONE
 
 //configuration: setGetBuffListFunction
 
@@ -182,19 +186,19 @@ public class BuffType
     private constant int dummyAbilityId
     private constant int dummyOrderId
 
-    private boolean magical
+    private DispelLevel dispelLevel
     private boolean positive
     private int buffId
     private LinkedList<int> abilities
 
     /** This buff is applied by using a dummy caster to cast the ability on the target. */
-    construct(int abilityId, string orderString, int buffId, boolean positive, boolean magical)
+    construct(int abilityId, string orderString, int buffId, boolean positive, DispelLevel dispelLevel)
         buffTypeCount++
 
         //onFirst -> cast the spell
         //onEnd -> dispel the buff
         this.positive = positive
-        this.magical = magical
+        this.dispelLevel = dispelLevel
 
         this.dummyAbilityId = abilityId
         this.buffId = buffId
@@ -205,11 +209,11 @@ public class BuffType
 
 
     /** This buff is applied by placing a hidden aura ability on the target. */
-    construct(LinkedList<int> abilities, int buffId, boolean positive, boolean magical)
+    construct(LinkedList<int> abilities, int buffId, boolean positive, DispelLevel dispelLevel)
         //onFirst -> add the aura
         //onEnd -> remove aura and buff
         this.positive = positive
-        this.magical = magical
+        this.dispelLevel = dispelLevel
 
         this.buffId = buffId
         this.abilities = abilities
@@ -217,9 +221,9 @@ public class BuffType
         this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
 
     /* empty constructor, to be able to use constants */
-    construct(boolean positive, boolean magical)
+    construct(boolean positive, DispelLevel dispel)
         this.positive = positive
-        this.magical = magical
+        this.dispelLevel = dispel
 
     function setup(LinkedList<int> abilities, int buffId)
         //onFirst -> add the aura
@@ -263,8 +267,8 @@ public class BuffType
     function getPeriodicTime() returns real
         return this.periodicTime
 
-    function isMagical() returns boolean
-        return this.magical
+    function getDispelLevel() returns DispelLevel
+        return this.dispelLevel
 
     function isPositive() returns boolean
         return this.positive
@@ -353,6 +357,10 @@ public class BuffList
         buffListCount--
         destroy linkedList
 
+public function Buff.setDispelLevel(DispelLevel dispelLevel)
+    if this != null
+        this.dispelLevel = dispelLevel
+
 public class Buff
 
     private unit caster
@@ -368,6 +376,7 @@ public class Buff
     private LinkedList<BuffEventClosure> onEnd
     private LinkedList<BuffEventClosure> onPeriodic
     private timer periodicTimer = null
+    protected DispelLevel dispelLevel
     protected boolean destroyed = false
 
     private int customData = 0
@@ -396,6 +405,9 @@ public class Buff
         this.onDispel = buffType.onDispel
         this.onEnd = buffType.onEnd
         this.onPeriodic = buffType.onPeriodic
+
+        this.dispelLevel = buffType.getDispelLevel()
+
         if(this.onPeriodic!=null)
             this.periodicTimer = getTimer()
                 ..setData(this castTo int)
@@ -485,6 +497,8 @@ public class Buff
             if newDuration > -0.5
                 this.expireTimer.start(newDuration, function expireStatic)
 
+    function getDispelLevel() returns DispelLevel
+        return this.dispelLevel
 
     function getCaster() returns unit
         return this.caster

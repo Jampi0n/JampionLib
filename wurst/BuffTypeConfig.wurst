@@ -23,7 +23,6 @@ constant ABILITY_INVIS = compiletime(ABIL_ID_GEN.next())
 constant ABILITY_DISARMED_EFFECT = compiletime(ABIL_ID_GEN.next())
 constant ABILITY_DISARMED_BUFF = compiletime(ABIL_ID_GEN.next())
 
-constant ABILITY_UNTARGETABLE = compiletime(ABIL_ID_GEN.next())
 
 constant BUFF_SILENCED = compiletime(BUFF_ID_GEN.next())
 constant BUFF_CYCLONED = compiletime(BUFF_ID_GEN.next())
@@ -32,19 +31,17 @@ constant BUFF_ENSNARED_AIR = compiletime(BUFF_ID_GEN.next())
 constant BUFF_ENTANGLED = compiletime(BUFF_ID_GEN.next())
 constant BUFF_MISS = compiletime(BUFF_ID_GEN.next())
 constant BUFF_DISARMED = compiletime(BUFF_ID_GEN.next())
-constant BUFF_UNTARGETABLE = compiletime(BUFF_ID_GEN.next())
 
-public constant STUNNED = new BuffType(ABILITY_STUNNED, "creepthunderbolt", 'BPSE', false, true)
-public constant SILENCED = new BuffType(ABILITY_SILENCED, "soulburn", BUFF_SILENCED, false, true)
-public constant CYCLONED = new BuffType(ABILITY_CYCLONED, "cyclone", BUFF_CYCLONED, false, true)
-public constant ENSNARED = new BuffType(false, true)
-public constant ENTANGLED = new BuffType(ABILITY_ENTANGLED, "entanglingroots", BUFF_ENTANGLED, false, true)
-public constant MISS = new BuffType(ABILITY_MISS, "drunkenhaze", BUFF_MISS, false, true)
-public constant INVIS = new BuffType(ABILITY_INVIS, "invisibility", 'Binv', true, true)
+public constant STUNNED = new BuffType(ABILITY_STUNNED, "creepthunderbolt", 'BPSE', false, DispelLevel.DISPEL)
+public constant SILENCED = new BuffType(ABILITY_SILENCED, "soulburn", BUFF_SILENCED, false, DispelLevel.DISPEL)
+public constant CYCLONED = new BuffType(ABILITY_CYCLONED, "cyclone", BUFF_CYCLONED, false, DispelLevel.DISPEL)
+public constant ENSNARED = new BuffType(false, DispelLevel.DISPEL)
+public constant ENTANGLED = new BuffType(ABILITY_ENTANGLED, "entanglingroots", BUFF_ENTANGLED, false, DispelLevel.DISPEL)
+public constant MISS = new BuffType(ABILITY_MISS, "drunkenhaze", BUFF_MISS, false, DispelLevel.DISPEL)
+public constant INVIS = new BuffType(ABILITY_INVIS, "invisibility", 'Binv', true, DispelLevel.DISPEL)
 
-public constant DISARMED = new BuffType(false, true)
+public constant DISARMED = new BuffType(false, DispelLevel.DISPEL)
 
-public constant UNTARGETABLE = new BuffType(true, true)
 
 public function AbilityDefinition.setDummySkill()
     this
@@ -120,11 +117,6 @@ function createObjectData()
     new BuffDefinition(BUFF_SILENCED, 'BNsi')
         ..setArtTarget(1, "")
         ..setName(1, "Silence")
-    new BuffDefinition(BUFF_UNTARGETABLE, 'Basl')
-        ..setIcon("ReplaceableTextures\\CommandButtons\\BTNCancel.blp")
-        ..setName(1, "Untargetable")
-        ..setTooltipNormal(1, "Untargetable")
-        ..setTooltipNormalExtended(1, "This unit is untargetable; it cannot be targeted.")
 
     new AbilityDefinitionDetectSentryWard(MAP_HACK_ABILITY)
         ..setCastRange(1, 99999)
@@ -149,17 +141,6 @@ init
     ..add(ABILITY_DISARMED_BUFF)
     ..add(ABILITY_DISARMED_EFFECT)
     DISARMED.setup(abilityList, BUFF_DISARMED)
-
-    abilityList = new LinkedList<int>
-    ..add(ABILITY_UNTARGETABLE)
-    UNTARGETABLE.setup(abilityList, BUFF_UNTARGETABLE)
-    UNTARGETABLE.addFirstFunction((Buff thisBuff)-> (begin
-        UnitAddType(thisBuff.getTarget(), UNIT_TYPE_ANCIENT)
-    end) )
-
-    UNTARGETABLE.addEndFunction((Buff thisBuff)-> (begin
-        UnitRemoveType(thisBuff.getTarget(), UNIT_TYPE_ANCIENT)
-    end) )
 
     ENSNARED
         ..addFirstFunction((Buff thisBuff) ->(begin
