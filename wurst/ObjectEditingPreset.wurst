@@ -2,10 +2,9 @@ package ObjectEditingPreset
 
 import AbilityObjEditing
 import BuffObjEditing
+import HashMap
 import public ObjectIds
 import public ObjectIdGenerator
-import LinkedList
-import HashMap
 import ClosureTimers
 import ErrorHandling
 import OnUnitEnterLeave
@@ -45,17 +44,13 @@ public function createTargetMissile(int newId, int buffId) returns AbilityDefini
 //
 //==========================================================================
 
-function compiletime(LinkedList<int> list) returns LinkedList<int>
-    return list
-    
-constant artilleryTypeIdList = compiletime(createArtilleryTypeIds())
+int firstArtilleryTypeId = compiletime(createArtilleryTypeIds())
 int artilleryAbility = compiletime(generateArtilleryAbility())
-    
 int array artilleryIndexToTypeId
 constant artilleryTypeIdToIndex = new HashMap<int,int>
 
-function createArtilleryTypeIds() returns LinkedList<int>
-    let l = new LinkedList<int>
+function createArtilleryTypeIds() returns int
+    int first = UNIT_ID_GEN.next()
     for i = 1 to MAX_ARTILLERY_MISSILES
         let unitTypeId = UNIT_ID_GEN.next()
         new UnitDefinition(unitTypeId, 'hfoo')
@@ -71,32 +66,29 @@ function createArtilleryTypeIds() returns LinkedList<int>
         ..setSightRadiusNight(0)
         ..setUpgradesUsed("")
         ..setUnitSoundSet("")
-        l.add(unitTypeId)
-    return l
+        artilleryIndexToTypeId[i] = unitTypeId
+    return first
+
+function setupArtilleryTypeIds()
+    let gen = new IdGenerator(firstArtilleryTypeId)
+    
+    for i = 1 to MAX_ARTILLERY_MISSILES
+        let unitTypeId = gen.next()
+        artilleryTypeIdToIndex.put(unitTypeId, i)
+        artilleryIndexToTypeId[i] = unitTypeId
 
 function generateArtilleryAbility() returns int
     int abilId = ABIL_ID_GEN.next()
     let aDef = new AbilityDefinitionPlagueToss(abilId)
     aDef..setRequirements("")
     ..setLevels(MAX_ARTILLERY_MISSILES)
-    int i = 1
-    for int unitTypeId in artilleryTypeIdList
+    for int i = 1 to MAX_ARTILLERY_MISSILES
         aDef
-        ..setWardUnitType(i, unitTypeId.toRawCode() )
+        ..setWardUnitType(i, artilleryIndexToTypeId[i].toRawCode() )
         ..setTargetsAllowed(i, "ground,enemy,structure,debris,tree,wall,organic,neutral")
         ..setDurationHero(i, 10.0)
         ..setDurationNormal(i, 10.0)
-        i++
     return abilId
-
-function setupDetectionDummies()
-    for i = 1 to MAX_ARTILLERY_MISSILES
-        artilleryIndexToTypeId[i] = artilleryTypeIdList.getFirst()
-        artilleryTypeIdToIndex.put(artilleryIndexToTypeId[i], i)
-        artilleryTypeIdList.removeAt(0)
-    destroy artilleryTypeIdList
-
-
 
 public interface OnArtilleryHit
     function hit(unit detectionUnit, unit caster, int data)
@@ -134,8 +126,9 @@ public class ArtilleryDetection
         destroy this.onHit
 
     private static function onImpact()
-        int id = artilleryTypeIdToIndex.get(getEnterLeaveUnit().getTypeId())
-        if id != 0
+        let key = getEnterLeaveUnit().getTypeId()
+        if artilleryTypeIdToIndex.has(key)
+            int id = artilleryTypeIdToIndex.get(key)
             (id castTo ArtilleryDetection).impact(getEnterLeaveUnit())
 
     protected static function classInit()
@@ -256,5 +249,5 @@ public function createPositiveBuffAbility(int levels, int buffId, string model, 
 
 init
     preloadAbility(artilleryAbility)
-    setupDetectionDummies()
+    setupArtilleryTypeIds()
     ArtilleryDetection.classInit()
