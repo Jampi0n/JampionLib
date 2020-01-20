@@ -33,7 +33,7 @@ public class Knockback2d
     private timer updateTimer
 
     private KnockbackUpdateFunction knockbackUpdateFunction = null
-    private int updateSteps
+    private int updateSteps = -1
     private KnockbackFinishFunction knockbackFinishFunction = null
 
     construct(unit whichUnit, vec2 targetPosition, real time)
@@ -76,7 +76,7 @@ public class Knockback2d
             if this.steps >= this.maxSteps
                 this.finish(true)
             else
-                if steps mod updateSteps == 0
+                if updateSteps != -1 and steps mod updateSteps == 0
                     this.knockbackUpdateFunction.knockbackUpdate(this, newPos)
         else
             this.finish(false)
@@ -90,7 +90,8 @@ public class Knockback2d
     private function finish(bool reachedDestination)
         let pos = this.affectedUnit.getPos()
         //this.affectedUnit.setPos(pos)
-        this.knockbackFinishFunction.knockbackFinish(this, pos, reachedDestination)
+        if this.knockbackFinishFunction != null
+            this.knockbackFinishFunction.knockbackFinish(this, pos, reachedDestination)
         destroy this
 
     ondestroy

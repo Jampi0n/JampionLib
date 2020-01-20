@@ -1,5 +1,6 @@
 package ObjectEditingPreset
 
+import Allocator
 import AbilityObjEditing
 import BuffObjEditing
 import HashMap
@@ -12,7 +13,6 @@ import Preloader
 
 constant MAX_ARTILLERY_MISSILES = 64
 constant MAX_ARTILLERY_AIR_TIME = 10.0
-constant MAX_MATCHING_RANGE = 16.0
 
 public function AbilityDefinition.hideIcon()
     this..setButtonPositionNormalX(0)
@@ -100,8 +100,16 @@ public class ArtilleryDetection
     private int data
     private OnArtilleryHit onHit
 
+    private static Allocator alloc = new Allocator(1)
+    private static ArtilleryDetection array indexToObject
+    private int index
+
     construct(unit caster, int data, OnArtilleryHit onHit)
-        if this castTo int > MAX_ARTILLERY_MISSILES
+        this.index = alloc.allocate()
+        indexToObject[this.index] = this
+
+        print("Artillery Id = " + (this.index).toString())
+        if this.index > MAX_ARTILLERY_MISSILES
             error("Too many missiles active at the same time. Increase MAX_ARTILLERY_MISSILES (=" + MAX_ARTILLERY_MISSILES.toString() + ")")
             destroy this
         else
@@ -116,6 +124,9 @@ public class ArtilleryDetection
                 if this.random == random
                     destroy this
 
+    function getIndex() returns int
+        return this.index
+
     function impact(unit detectionUnit)
         this.onHit.hit(detectionUnit, this.caster, this.data)
         detectionUnit.remove()
@@ -125,11 +136,14 @@ public class ArtilleryDetection
         this.random = -1
         destroy this.onHit
 
+        alloc.deallocate(this.index)
+
     private static function onImpact()
         let key = getEnterLeaveUnit().getTypeId()
         if artilleryTypeIdToIndex.has(key)
             int id = artilleryTypeIdToIndex.get(key)
-            (id castTo ArtilleryDetection).impact(getEnterLeaveUnit())
+            print("onImpact id = " + id.toString())
+            (indexToObject[id]).impact(getEnterLeaveUnit())
 
     protected static function classInit()
         onEnter( -> onImpact())
@@ -140,7 +154,7 @@ public class ArtilleryDetection
     static function fireArtillery(unit caster, int artilleyTypeId, vec2 start, vec2 target, int data, OnArtilleryHit onHit)
         let artillery = createUnit(caster.getOwner(), artilleyTypeId, start, start.angleTo(target))
         let detection = new ArtilleryDetection(caster, data, onHit)
-        artillery.setAbilityLevel(artilleryAbility, detection castTo int)
+        artillery.setAbilityLevel(artilleryAbility, detection.getIndex())
         artillery.issuePointOrder("attackground", target)
         artillery.setTimedLife(1)
 
