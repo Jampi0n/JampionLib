@@ -115,7 +115,7 @@ public class Missile
             let newPos = this.dummy.getPos().polarOffset(this.direction, this.speed*UPDATE_INTERVAL)
             this.dummy.setPos(newPos)
 
-            group nearby = CreateGroup()
+            let nearby = CreateGroup()
             nearby.enumUnitsInRange(newPos, this.size + MAX_HITBOX_SIZE)
 
             while(not nearby.isEmpty())
@@ -123,7 +123,7 @@ public class Missile
                 if destroyed
                     break
 
-                unit target = FirstOfGroup(nearby)
+                let target = FirstOfGroup(nearby)
                 
                 nearby.removeUnit(target)
                 let targetPos = target.getPos()

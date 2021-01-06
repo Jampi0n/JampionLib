@@ -12,7 +12,7 @@ import OnUnitEnterLeave
 import Preloader
 
 constant MAX_ARTILLERY_MISSILES = 64
-constant MAX_ARTILLERY_AIR_TIME = 10.0
+constant MAX_ARTILLERY_AIR_TIME = 32.0
 
 public function AbilityDefinition.hideIcon()
     this..setButtonPositionNormalX(0)
@@ -50,7 +50,7 @@ int array artilleryIndexToTypeId
 constant artilleryTypeIdToIndex = new HashMap<int,int>
 
 function createArtilleryTypeIds() returns int
-    int first = UNIT_ID_GEN.next()
+    let first = UNIT_ID_GEN.next()
     for i = 1 to MAX_ARTILLERY_MISSILES
         let unitTypeId = UNIT_ID_GEN.next()
         new UnitDefinition(unitTypeId, 'hfoo')
@@ -78,7 +78,7 @@ function setupArtilleryTypeIds()
         artilleryIndexToTypeId[i] = unitTypeId
 
 function generateArtilleryAbility() returns int
-    int abilId = ABIL_ID_GEN.next()
+    let abilId = ABIL_ID_GEN.next()
     let aDef = new AbilityDefinitionPlagueToss(abilId)
     aDef..setRequirements("")
     ..setLevels(MAX_ARTILLERY_MISSILES)
@@ -108,7 +108,6 @@ public class ArtilleryDetection
         this.index = alloc.allocate()
         indexToObject[this.index] = this
 
-        print("Artillery Id = " + (this.index).toString())
         if this.index > MAX_ARTILLERY_MISSILES
             error("Too many missiles active at the same time. Increase MAX_ARTILLERY_MISSILES (=" + MAX_ARTILLERY_MISSILES.toString() + ")")
             destroy this
@@ -122,6 +121,7 @@ public class ArtilleryDetection
     
             doAfter(MAX_ARTILLERY_AIR_TIME) -> 
                 if this.random == random
+                    Log.warn("Artillery detection expired")
                     destroy this
 
     function getIndex() returns int
@@ -135,17 +135,23 @@ public class ArtilleryDetection
     ondestroy
         this.random = -1
         destroy this.onHit
-
+        indexToObject[this.index] = null
         alloc.deallocate(this.index)
 
     private static function onImpact()
         let key = getEnterLeaveUnit().getTypeId()
         if artilleryTypeIdToIndex.has(key)
-            int id = artilleryTypeIdToIndex.get(key)
-            print("onImpact id = " + id.toString())
-            (indexToObject[id]).impact(getEnterLeaveUnit())
+            let id = artilleryTypeIdToIndex.get(key)
+            let artilleryDetection = indexToObject[id]
+            if artilleryDetection != null
+                artilleryDetection.impact(getEnterLeaveUnit())
+            else
+                Log.warn("index error for ArtilleryDetection")
 
     protected static function classInit()
+        for i = 0 to MAX_ARTILLERY_MISSILES
+            indexToObject[i] = null
+            
         onEnter( -> onImpact())
       
     static function fireArtillery(unit caster, int artilleyTypeId, vec2 start, vec2 target, OnArtilleryHit onHit)

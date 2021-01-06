@@ -1,6 +1,5 @@
 package BuffTypeConfig
 
-import LinkedList
 import Buff
 import ObjectIdGenerator
 import AbilityObjEditing
@@ -137,10 +136,7 @@ init
         ..start()
     createUnit(DUMMY_PLAYER, MAP_HACK, playableCenter, angle(0))
 
-    var abilityList = new LinkedList<int>
-    ..add(ABILITY_DISARMED_BUFF)
-    ..add(ABILITY_DISARMED_EFFECT)
-    DISARMED.setup(abilityList, BUFF_DISARMED)
+    DISARMED.setupBuffWithIcon(BUFF_DISARMED, ABILITY_DISARMED_BUFF, ABILITY_DISARMED_EFFECT)
 
     ENSNARED
         ..addFirstFunction((Buff thisBuff) ->(begin

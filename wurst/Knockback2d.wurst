@@ -61,7 +61,7 @@ public class Knockback2d
 
     private function update()
         this.steps++
-        vec2 newPos = startPosition.polarOffset(this.knockbackAngle, steps * UPDATE_INTERVAL * speed )
+        let newPos = startPosition.polarOffset(this.knockbackAngle, steps * UPDATE_INTERVAL * speed )
         bool walkable = true
 
         let checkDist = 16.0
@@ -83,7 +83,7 @@ public class Knockback2d
         
     private static function updateStatic()
         let updateTimer = GetExpiredTimer()
-        Knockback2d kb = updateTimer.getData() castTo Knockback2d
+        let kb = updateTimer.getData() castTo Knockback2d
         kb.update()
 
 

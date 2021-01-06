@@ -225,13 +225,31 @@ public class BuffType
         this.positive = positive
         this.dispelLevel = dispel
 
-    function setup(LinkedList<int> abilities, int buffId)
+    function setupBuffWithIcon(int buffId, LinkedList<int> abilities)
         //onFirst -> add the aura
         //onEnd -> remove aura and buff
         this.buffId = buffId
         this.abilities = abilities
         this.addFirstFunction( (Buff whichBuff) -> addAuraAbility(whichBuff))
         this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
+
+    function setupBuffWithIcon(int buffId, int abilityId)
+        let list = new LinkedList<int>()
+        list.add(abilityId)
+        this.setupBuffWithIcon(buffId, list)
+
+    function setupBuffWithIcon(int buffId, int abilityId1, int abilityId2)
+        let list = new LinkedList<int>()
+        list.add(abilityId1)
+        list.add(abilityId2)
+        this.setupBuffWithIcon(buffId, list)
+
+    function setupBuffWithIcon(int buffId, int abilityId1, int abilityId2, int abilityId3)
+        let list = new LinkedList<int>()
+        list.add(abilityId1)
+        list.add(abilityId2)
+        list.add(abilityId3)
+        this.setupBuffWithIcon(buffId, list)
 
 
     static function castDummySpell(Buff whichBuff)
@@ -381,9 +399,7 @@ public class Buff
 
     private int customData = 0
 
-    private static Buff currentBuff 
-
-    construct(unit target, unit caster, real duration, BuffType buffType, int level)
+    private construct(unit target, unit caster, real duration, BuffType buffType, int level)
         buffCount++
        
         this.expireTimer = getTimer()
@@ -415,52 +431,40 @@ public class Buff
         else
             this.periodicTimer = null
 
-        currentBuff = this
-
-
-        if(this.onApply!=null)
+        getBuffListFunction.getBuffList(target).add(this)
+        if this.onFirst!=null
+            for BuffEventClosure cb in this.onFirst
+                cb.run(this)
+        if this.onApply!=null
             for BuffEventClosure cb in this.onApply
                 cb.run(this)
 
-        let oldBuff = BuffList.getBuffOfType(this.target, this.buffType)
+        
+        
 
-        if(oldBuff!=null)
-            //print("stack")
 
-            if oldBuff.destroyed == true
-                print("old buff already destroyed")
-
-            if(this.onStack!=null)
-                for BuffEventClosure cb in this.onStack
-                    cb.run(oldBuff)
-            oldBuff.update(this.caster, duration, level)
-            destroy this
+    static function applyBuff(unit target, unit caster, real duration, BuffType buffType, int level)
+        let oldBuff = BuffList.getBuffOfType(target, buffType)
+        if oldBuff != null
+            oldBuff.update(caster, duration, level)
         else
-            //print("first")
-            getBuffListFunction.getBuffList(target).add(this)
-            if(this.onFirst!=null)
-                for BuffEventClosure cb in this.onFirst
-                    cb.run(this)
-
-        //print(this.expireTimer.getRemaining())
+            new Buff(target, caster, duration, buffType, level)
         
 
     private function onPeriodic()
         if not destroyed
-            currentBuff = this
             if(this.onPeriodic!=null)
                 for BuffEventClosure cb in this.onPeriodic
                     cb.run(this)
 
     private static function onPeriodicStatic()
         let t = GetExpiredTimer()
-        Buff thisBuff = t.getData() castTo Buff
+        let thisBuff = t.getData() castTo Buff
         if thisBuff != null
             thisBuff.onPeriodic()
         
     
     private function expire()
-        currentBuff = this
         if(this.onExpire!=null)
             for BuffEventClosure cb in this.onExpire
                 cb.run(this)
@@ -470,7 +474,6 @@ public class Buff
         destroy this
 
     function dispel()
-        currentBuff = this
         execute() () ->
             if(this.onDispel!=null)
                 for BuffEventClosure cb in this.onDispel
@@ -483,13 +486,19 @@ public class Buff
 
     private static function expireStatic()
         let t = GetExpiredTimer()
-        Buff thisBuff = t.getData() castTo Buff
+        let thisBuff = t.getData() castTo Buff
         if thisBuff != null
             thisBuff.expire()
         
     private function update(unit newCaster, real newDuration, int newLevel)
         this.caster = newCaster
         this.level = newLevel
+        if this.onApply!=null
+            for BuffEventClosure cb in this.onApply
+                cb.run(this)
+        if this.onStack!=null
+            for BuffEventClosure cb in this.onStack
+                cb.run(this)
         if newDuration < -0.5 or newDuration > this.expireTimer.getRemaining()
             this.expireTimer.release()
             this.expireTimer = getTimer()
@@ -521,15 +530,11 @@ public class Buff
     function setData(int data)
         this.customData = data
 
-    //static function getTriggerBuff() returns Buff
-        //return currentBuff
-
     ondestroy
-        
         buffCount--
         destroyed = true
 
-        BuffList buffList = getBuffListFunction.getBuffList(target)
+        let buffList = getBuffListFunction.getBuffList(target)
 
         if buffList!=null
             buffList.remove(this)
