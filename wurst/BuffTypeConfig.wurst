@@ -138,14 +138,10 @@ init
 
     DISARMED.setupBuffWithIcon(BUFF_DISARMED, ABILITY_DISARMED_BUFF, ABILITY_DISARMED_EFFECT)
 
-    ENSNARED
-        ..addFirstFunction((Buff thisBuff) ->(begin
+    ENSNARED.addSetupFunction() (Buff thisBuff, int factor) ->
         let target = thisBuff.getTarget()
-        InstantDummyCaster.castTarget(DUMMY_PLAYER, ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
-    end))
-        ..addEndFunction((Buff thisBuff) ->(begin
-        let target = thisBuff.getTarget()
-        target.removeAbility(BUFF_ENSNARED)
-        target.removeAbility(BUFF_ENSNARED_AIR)
-    end))    
-
+        if factor == 1
+            InstantDummyCaster.castTarget(DUMMY_PLAYER, ABILITY_ENSNARED, 1, "ensnare", target, target.getPos())
+        else
+            target.removeAbility(BUFF_ENSNARED)
+            target.removeAbility(BUFF_ENSNARED_AIR)   

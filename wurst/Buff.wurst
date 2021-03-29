@@ -14,36 +14,30 @@ int buffListCount = 0
 int buffTypeCount = 0
 
 public enum DispelLevel
-    DISPEL
-    BREAK
-    NONE
-
-//configuration: setGetBuffListFunction
+    DISPEL // standard dispel or turning the target untargetable
+    BREAK // only by turning the target untargetable
+    NONE // not dispellable
 
 
 public interface GetBuffListFunction
     function getBuffList(unit u) returns BuffList
-
-GetBuffListFunction getBuffListFunction = null
-
-public function setGetBuffListFunction(GetBuffListFunction getBuffList)
-    if getBuffListFunction != null
-        error("The getBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setGetBuffListFunction.")
-    else
-        getBuffListFunction = getBuffList
-
-//configuration: setCreateBuffListFunction
-
 public interface CreaetBuffListFunction
     function createBuffList(unit u)
 
+GetBuffListFunction getBuffListFunction = null
 CreaetBuffListFunction createBuffListFunction = null
 
-public function setCreateBuffListFunction(CreaetBuffListFunction createBuffList)
-    if createBuffListFunction != null
-        error("The createBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setCreateBuffListFunction.")
-    else
-        createBuffListFunction = createBuffList
+public abstract class BuffConfiguration
+    static function setGetBuffListFunction(GetBuffListFunction getBuffList)
+        if getBuffListFunction != null
+            error("The getBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setGetBuffListFunction.")
+        else
+            getBuffListFunction = getBuffList
+    static function setCreateBuffListFunction(CreaetBuffListFunction createBuffList)
+        if createBuffListFunction != null
+            error("The createBuffListFunction was already configured. If you use useNativeBuffListAllocation, you must not use setCreateBuffListFunction.")
+        else
+            createBuffListFunction = createBuffList
 
 
 /*
@@ -67,13 +61,13 @@ public function useNativeBuffListAllocation()
                 unitToBuffList.remove(getEnterLeaveUnit())
     end))
 
-    setCreateBuffListFunction( (unit u) -> (begin
+    BuffConfiguration.setCreateBuffListFunction( (unit u) -> (begin
         let bList = new BuffList
         unitToBuffList.put(u, bList)
         return bList
     end))
 
-    setGetBuffListFunction( (unit u) -> (begin
+    BuffConfiguration.setGetBuffListFunction( (unit u) -> (begin
         let bList = unitToBuffList.get(u)
         return bList
     end))
@@ -149,7 +143,8 @@ However if a unit is removed the bufflist is removed first and then the bufflist
 public interface BuffEventClosure
     function run(Buff whichBuff)
 
-
+public interface BuffFunction
+    function run(Buff thisBuff, int factor)
 
 public class BuffType
 
@@ -180,6 +175,8 @@ public class BuffType
     protected LinkedList<BuffEventClosure> onDispel = null
     protected LinkedList<BuffEventClosure> onEnd = null
     protected LinkedList<BuffEventClosure> onPeriodic = null
+    protected LinkedList<BuffFunction> onSetup = null
+    protected LinkedList<BuffFunction> onLevel = null
 
     private real periodicTime = 1
 
@@ -203,8 +200,11 @@ public class BuffType
         this.dummyAbilityId = abilityId
         this.buffId = buffId
         this.dummyOrderId = OrderId(orderString)
-        this.addFirstFunction( (Buff whichBuff) -> castDummySpell(whichBuff))
-        this.addEndFunction( (Buff whichBuff) -> removeDummyBuff(whichBuff))
+        this.addSetupFunction() (Buff thisBuff, int factor) ->
+            if factor == 1
+                castDummySpell(thisBuff)
+            else
+                removeDummyBuff(thisBuff)
 
 
 
@@ -217,8 +217,11 @@ public class BuffType
 
         this.buffId = buffId
         this.abilities = abilities
-        this.addFirstFunction( (Buff whichBuff) -> addAuraAbility(whichBuff))
-        this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
+        this.addSetupFunction() (Buff thisBuff, int factor) ->
+            if factor == 1
+                addAuraAbility(thisBuff)
+            else
+                removeAuraAbility(thisBuff)
 
     /* empty constructor, to be able to use constants */
     construct(boolean positive, DispelLevel dispel)
@@ -230,8 +233,11 @@ public class BuffType
         //onEnd -> remove aura and buff
         this.buffId = buffId
         this.abilities = abilities
-        this.addFirstFunction( (Buff whichBuff) -> addAuraAbility(whichBuff))
-        this.addEndFunction( (Buff whichBuff) -> removeAuraAbility(whichBuff))
+        this.addSetupFunction() (Buff thisBuff, int factor) ->
+            if factor == 1
+                addAuraAbility(thisBuff)
+            else
+                removeAuraAbility(thisBuff)
 
     function setupBuffWithIcon(int buffId, int abilityId)
         let list = new LinkedList<int>()
@@ -291,6 +297,25 @@ public class BuffType
     function isPositive() returns boolean
         return this.positive
 
+    /**
+    This function is run when the buff is created and destroyed.
+    Use it for level independent things like special effects. 
+    **/
+    function addSetupFunction(BuffFunction cb)
+        if(this.onSetup==null)
+            this.onSetup = new LinkedList<BuffFunction>()
+        this.onSetup.add(cb)
+    /**
+    This function is run when the buff is created and destroyed and also whenever it is reapplied.
+    When the buff is reapplied, the function is first run to remove the old level and then again to add the new level.
+    Use it for level dependent things that need to be updated when the level is changed.
+    **/
+    function addLevelFunction(BuffFunction cb)
+        if(this.onLevel==null)
+            this.onLevel = new LinkedList<BuffFunction>()
+        this.onLevel.add(cb)
+
+    @deprecated("Use addSetupFunction or addLevelFunction")
     function addFirstFunction(BuffEventClosure cb)
         if(this.onFirst==null)
             this.onFirst = new LinkedList<BuffEventClosure>()
@@ -316,6 +341,7 @@ public class BuffType
             this.onDispel = new LinkedList<BuffEventClosure>()
         this.onDispel.add(cb)
 
+    @deprecated("Use addSetupFunction or addLevelFunction")
     function addEndFunction(BuffEventClosure cb)
         if(this.onEnd==null)
             this.onEnd = new LinkedList<BuffEventClosure>()
@@ -393,6 +419,8 @@ public class Buff
     private LinkedList<BuffEventClosure> onDispel
     private LinkedList<BuffEventClosure> onEnd
     private LinkedList<BuffEventClosure> onPeriodic
+    private LinkedList<BuffFunction> onSetup
+    private LinkedList<BuffFunction> onLevel
     private timer periodicTimer = null
     protected DispelLevel dispelLevel
     protected boolean destroyed = false
@@ -421,6 +449,8 @@ public class Buff
         this.onDispel = buffType.onDispel
         this.onEnd = buffType.onEnd
         this.onPeriodic = buffType.onPeriodic
+        this.onSetup = buffType.onSetup
+        this.onLevel = buffType.onLevel
 
         this.dispelLevel = buffType.getDispelLevel()
 
@@ -432,16 +462,18 @@ public class Buff
             this.periodicTimer = null
 
         getBuffListFunction.getBuffList(target).add(this)
+        if this.onSetup != null
+            for BuffFunction cb in this.onSetup
+                cb.run(this, 1)
+        if this.onLevel != null
+            for BuffFunction cb in this.onLevel
+                cb.run(this, 1)
         if this.onFirst!=null
             for BuffEventClosure cb in this.onFirst
                 cb.run(this)
         if this.onApply!=null
             for BuffEventClosure cb in this.onApply
                 cb.run(this)
-
-        
-        
-
 
     static function applyBuff(unit target, unit caster, real duration, BuffType buffType, int level)
         let oldBuff = BuffList.getBuffOfType(target, buffType)
@@ -471,6 +503,12 @@ public class Buff
         if(this.onEnd!=null)
             for BuffEventClosure cb in this.onEnd
                 cb.run(this)
+        if this.onLevel != null
+            for BuffFunction cb in this.onLevel
+                cb.run(this, -1)
+        if this.onSetup != null
+            for BuffFunction cb in this.onSetup
+                cb.run(this, -1)
         destroy this
 
     function dispel()
@@ -481,6 +519,12 @@ public class Buff
             if(this.onEnd!=null)
                 for BuffEventClosure cb in this.onEnd
                     cb.run(this)
+            if this.onLevel != null
+                for BuffFunction cb in this.onLevel
+                    cb.run(this, -1)
+            if this.onSetup != null
+                for BuffFunction cb in this.onSetup
+                    cb.run(this, -1)
         destroy this
 
 
@@ -492,7 +536,15 @@ public class Buff
         
     private function update(unit newCaster, real newDuration, int newLevel)
         this.caster = newCaster
+        // remove old level
+        if this.onLevel != null
+            for BuffFunction cb in this.onLevel
+                cb.run(this, -1)
         this.level = newLevel
+        // add new level
+        if this.onLevel != null
+            for BuffFunction cb in this.onLevel
+                cb.run(this, 1)
         if this.onApply!=null
             for BuffEventClosure cb in this.onApply
                 cb.run(this)
@@ -540,10 +592,8 @@ public class Buff
             buffList.remove(this)
 
         this.expireTimer.release()
-        this.expireTimer.setData(0) //binds null to the timer
         if this.periodicTimer != null
             this.periodicTimer.release()
-            this.periodicTimer.setData(0) //binds null to the timer
 
         this.customData = 0
         //do not modify triggers. They belong to the BuffType
