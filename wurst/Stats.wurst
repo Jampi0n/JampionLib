@@ -1,5 +1,7 @@
 package Stats
 
+string array nameArray
+
 public enum Stat
     HP // upgrade (25) + bonus mod
     HR // triggers (0.1)
@@ -21,5 +23,18 @@ public function intToStat(int i) returns Stat
     return i castTo Stat
 
 public function Stat.toString() returns string
-    return (this castTo int).toString()
+    return nameArray[this castTo int]
 
+init
+    nameArray[Stat.HP.toInt()] = "HP"
+    nameArray[Stat.HR.toInt()] = "HR"
+    nameArray[Stat.MP.toInt()] = "MP"
+    nameArray[Stat.MR.toInt()] = "MR"
+    nameArray[Stat.AD.toInt()] = "AD"
+    nameArray[Stat.AS.toInt()] = "AS"
+    nameArray[Stat.AR.toInt()] = "AR"
+    nameArray[Stat.MS.toInt()] = "MS"
+    nameArray[Stat.STR.toInt()] = "STR"
+    nameArray[Stat.AGI.toInt()] = "AGI"
+    nameArray[Stat.INT.toInt()] = "INT"
+    nameArray[Stat.CD.toInt()] = "CD"
