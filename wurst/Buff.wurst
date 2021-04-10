@@ -105,13 +105,13 @@ public interface BuffFunction
     function run(Buff thisBuff, int factor)
 
 public class BuffType
-    protected LinkedList<BuffEventClosure> onStack = null
-    protected LinkedList<BuffEventClosure> onApply = null
-    protected LinkedList<BuffEventClosure> onExpire = null
-    protected LinkedList<BuffEventClosure> onDispel = null
-    protected LinkedList<BuffEventClosure> onPeriodic = null
-    protected LinkedList<BuffFunction> onSetup = null
-    protected LinkedList<BuffFunction> onLevel = null
+    protected constant onStack = new LinkedList<BuffEventClosure>
+    protected constant onApply = new LinkedList<BuffEventClosure>
+    protected constant onExpire = new LinkedList<BuffEventClosure>
+    protected constant onDispel = new LinkedList<BuffEventClosure>
+    protected constant onPeriodic = new LinkedList<BuffEventClosure>
+    protected constant onSetup = new LinkedList<BuffFunction>
+    protected constant onLevel = new LinkedList<BuffFunction>
 
     private real periodicTime = 1
 
@@ -226,8 +226,6 @@ public class BuffType
     This extends to damage events, as they frequently trigger these effects.
     **/
     function addSetupFunction(BuffFunction cb)
-        if(this.onSetup==null)
-            this.onSetup = new LinkedList<BuffFunction>()
         this.onSetup.add(cb)
     /**
     This function is run when the buff is created and destroyed and also whenever it is reapplied.
@@ -237,18 +235,12 @@ public class BuffType
     This extends to damage events, as they frequently trigger these effects.
     **/
     function addLevelFunction(BuffFunction cb)
-        if(this.onLevel==null)
-            this.onLevel = new LinkedList<BuffFunction>()
         this.onLevel.add(cb)
 
     function addStackFunction(BuffEventClosure cb)
-        if(this.onStack==null)
-            this.onStack = new LinkedList<BuffEventClosure>()
         this.onStack.add(cb)
 
     function addApplyFunction(BuffEventClosure cb)
-        if(this.onApply==null)
-            this.onApply = new LinkedList<BuffEventClosure>()
         this.onApply.add(cb)
 
     /**
@@ -256,8 +248,6 @@ public class BuffType
     This extends to damage events, as they frequently trigger these effects.
     **/
     function addExpireFunction(BuffEventClosure cb)
-        if(this.onExpire==null)
-            this.onExpire = new LinkedList<BuffEventClosure>()
         this.onExpire.add(cb)
 
     /**
@@ -265,13 +255,9 @@ public class BuffType
     This extends to damage events, as they frequently trigger these effects.
     **/
     function addDispelFunction(BuffEventClosure cb)
-        if(this.onDispel==null)
-            this.onDispel = new LinkedList<BuffEventClosure>()
         this.onDispel.add(cb)
 
     function addPeriodicFunction(BuffEventClosure cb)
-        if(this.onPeriodic==null)
-            this.onPeriodic = new LinkedList<BuffEventClosure>()
         this.onPeriodic.add(cb)
 
 /** Keeps track of the buffs a certain unit has.
@@ -334,12 +320,10 @@ public class Buff
     private int level
     private BuffType buffType
     private timer expireTimer
-    private LinkedList<BuffEventClosure> onFirst
     private LinkedList<BuffEventClosure> onStack
     private LinkedList<BuffEventClosure> onApply
     private LinkedList<BuffEventClosure> onExpire
     private LinkedList<BuffEventClosure> onDispel
-    private LinkedList<BuffEventClosure> onEnd
     private LinkedList<BuffEventClosure> onPeriodic
     private LinkedList<BuffFunction> onSetup
     private LinkedList<BuffFunction> onLevel
@@ -397,9 +381,6 @@ public class Buff
         if this.onLevel != null
             for BuffFunction cb in this.onLevel
                 cb.run(this, 1)
-        if this.onFirst!=null
-            for BuffEventClosure cb in this.onFirst
-                cb.run(this)
         if this.onApply!=null
             for BuffEventClosure cb in this.onApply
                 cb.run(this)
@@ -438,9 +419,6 @@ public class Buff
         if(this.onExpire!=null)
             for BuffEventClosure cb in this.onExpire
                 cb.run(this)
-        if(this.onEnd!=null)
-            for BuffEventClosure cb in this.onEnd
-                cb.run(this)
         if this.onLevel != null
             for BuffFunction cb in this.onLevel
                 cb.run(this, -1)
@@ -462,9 +440,6 @@ public class Buff
         execute() () ->
             if(this.onDispel!=null)
                 for BuffEventClosure cb in this.onDispel
-                    cb.run(this)
-            if(this.onEnd!=null)
-                for BuffEventClosure cb in this.onEnd
                     cb.run(this)
             if this.onLevel != null
                 for BuffFunction cb in this.onLevel
