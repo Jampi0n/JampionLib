@@ -8,6 +8,7 @@ import HashMap
 import ErrorHandling
 import ClosureTimers
 import Execute
+import ObjectEditingPreset
 
 int buffCount = 0
 int buffListCount = 0
@@ -119,8 +120,8 @@ public class BuffType
 
     private DispelLevel dispelLevel
     private boolean positive
-    private int buffId
-    private LinkedList<int> abilities
+    protected int buffId = -1
+    protected LinkedList<int> abilities = null
 
     /** This buff is applied by using a dummy caster to cast the ability on the target. */
     construct(int abilityId, string orderString, int buffId, boolean positive, DispelLevel dispelLevel)
@@ -141,22 +142,6 @@ public class BuffType
                 removeDummyBuff(thisBuff)
 
 
-
-    /** This buff is applied by placing a hidden aura ability on the target. */
-    construct(LinkedList<int> abilities, int buffId, boolean positive, DispelLevel dispelLevel)
-        //onFirst -> add the aura
-        //onEnd -> remove aura and buff
-        this.positive = positive
-        this.dispelLevel = dispelLevel
-
-        this.buffId = buffId
-        this.abilities = abilities
-        this.addSetupFunction() (Buff thisBuff, int factor) ->
-            if factor == 1
-                addAuraAbility(thisBuff)
-            else
-                removeAuraAbility(thisBuff)
-
     /* empty constructor, to be able to use constants */
     construct(boolean positive, DispelLevel dispel)
         this.positive = positive
@@ -167,11 +152,6 @@ public class BuffType
         //onEnd -> remove aura and buff
         this.buffId = buffId
         this.abilities = abilities
-        this.addSetupFunction() (Buff thisBuff, int factor) ->
-            if factor == 1
-                addAuraAbility(thisBuff)
-            else
-                removeAuraAbility(thisBuff)
 
     function setupBuffWithIcon(int buffId, int abilityId)
         let list = new LinkedList<int>()
@@ -227,6 +207,15 @@ public class BuffType
 
     function getDispelLevel() returns DispelLevel
         return this.dispelLevel
+
+    function getAbilities() returns LinkedList<int>
+        return this.abilities
+    
+    function getAbilityFirst() returns int
+        return this.abilities.getFirst()
+
+    function getBuffId() returns int
+        return this.buffId
 
     function isPositive() returns boolean
         return this.positive
@@ -399,6 +388,9 @@ public class Buff
             this.periodicTimer = null
 
         getBuffListFunction.getBuffList(target).add(this)
+        if this.buffType.abilities != null
+            for abil in this.buffType.abilities
+                target.addAbility(abil)
         if this.onSetup != null
             for BuffFunction cb in this.onSetup
                 cb.run(this, 1)
@@ -455,6 +447,11 @@ public class Buff
         if this.onSetup != null
             for BuffFunction cb in this.onSetup
                 cb.run(this, -1)
+        if this.buffType.abilities != null
+            for abil in this.buffType.abilities
+                target.removeAbility(abil)
+        if this.buffType.buffId != -1
+            target.removeAbility(this.buffType.buffId)
         destroy this
 
     function dispel()
@@ -475,7 +472,12 @@ public class Buff
             if this.onSetup != null
                 for BuffFunction cb in this.onSetup
                     cb.run(this, -1)
-        destroy this
+            if this.buffType.abilities != null
+                for abil in this.buffType.abilities
+                    target.removeAbility(abil)
+            if this.buffType.buffId != -1
+                target.removeAbility(this.buffType.buffId)
+            destroy this
 
 
     private static function expireStatic()
@@ -557,3 +559,16 @@ public function debugBuff()
     print("BuffTypeCount = "+buffTypeCount.toString())
     print("BuffListCount = "+buffListCount.toString())
     print("BuffCount = "+buffCount.toString())
+
+public function setupBuff(string name, string description, string icon, bool positive, int levels, string model, string attachmentPoint, DispelLevel dispelLevel) returns BuffType
+    let buffId = createAuraBuff(name, description, icon)
+    let abilityId = positive?createPositiveBuffAbility(levels, buffId, model, attachmentPoint):createNegativeBuffAbility(levels, buffId, model, attachmentPoint)
+    let buffType = new BuffType(positive, dispelLevel)
+    buffType.setupBuffWithIcon(buffId, abilityId)
+    return buffType
+
+public function setupBuff(string name, string description, string icon, bool positive, int abilityId, DispelLevel dispelLevel) returns BuffType
+    let buffId = createAuraBuff(name, description, icon)
+    let buffType = new BuffType(positive, dispelLevel)
+    buffType.setupBuffWithIcon(buffId, abilityId)
+    return buffType
