@@ -147,10 +147,12 @@ public function unit.setBonus(Stat whichStat, int bonus)
 function unit.setBonus(int abilityIndex, int maxBonus, int minBonus, int maxLevel, int bonus)
     if(bonus > maxBonus)
         print("Error. This Bonus is too high." + bonus.toString() + "/" + maxBonus.toString())
+        this.setBonus(abilityIndex, maxBonus, minBonus, maxLevel, maxBonus)
         return
 
     if(bonus < minBonus)
         print("Error. This Bonus is too low:" + bonus.toString() + "/" + minBonus.toString())
+        this.setBonus(abilityIndex, maxBonus, minBonus, maxLevel, minBonus)
         return
 
     var remainingBonus = bonus
